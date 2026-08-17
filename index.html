@@ -86,7 +86,8 @@
                     <div class="hidden md:block border-l border-gray-600 h-6 mx-2"></div>
                     
                     <button id="zoom-out" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">- Zoom</button>
-                    <span id="zoom-val">100%</span>
+                    <!-- Trocado 100% para 70% como padrão no HTML -->
+                    <span id="zoom-val">70%</span>
                     <button id="zoom-in" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">+ Zoom</button>
                 </div>
                 
@@ -209,7 +210,8 @@
         let pageNum = 1;
         let pageRendering = false;
         let pageNumPending = null;
-        let scale = 1.5;
+        // Alterado para 0.7 para começar com o zoom em 70% por padrão
+        let scale = 0.7; 
         let canvas = document.getElementById('pdf-canvas');
         let ctx = canvas.getContext('2d');
         
@@ -239,10 +241,8 @@
 
         async function loadPdfFromUrl(rawLink) {
             try {
-                // Tenta carregar diretamente o link Raw do GitHub (GitHub já possui CORS liberado para Raw)
                 return await pdfjsLib.getDocument(rawLink).promise;
             } catch (err) {
-                // Fallback robusto caso ocorra algum problema inesperado
                 const altProxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(rawLink)}`;
                 return await pdfjsLib.getDocument(altProxy).promise;
             }
@@ -303,7 +303,6 @@
             }
         });
 
-        // Evento de carregamento do link do GitHub
         document.getElementById('btn-load-github').addEventListener('click', async function() {
             const linkInput = document.getElementById('pdf-github-link').value.trim();
             if (!linkInput) {
@@ -341,7 +340,6 @@
         document.getElementById('zoom-in').addEventListener('click', () => { scale += 0.2; updateZoom(); renderPage(pageNum); });
         document.getElementById('zoom-out').addEventListener('click', () => { if(scale > 0.6) { scale -= 0.2; updateZoom(); renderPage(pageNum); } });
 
-        // Pesquisa Dinâmica
         document.getElementById('search-input').addEventListener('input', function(e) {
             let query = e.target.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
             
@@ -371,13 +369,31 @@
             pageRendering = true;
             pdfDoc.getPage(num).then(page => {
                 const viewport = page.getViewport({ scale: scale });
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
+                
+                // --- INÍCIO DA ALTERAÇÃO: CORREÇÃO DE QUALIDADE PARA TELAS DE ALTA DENSIDADE ---
+                // Verifica a densidade de pixels da tela do usuário (celulares geralmente são 2 ou 3)
+                const outputScale = window.devicePixelRatio || 1;
+                
+                // O canvas é renderizado em alta qualidade multiplicando pelo outputScale
+                canvas.width = Math.floor(viewport.width * outputScale);
+                canvas.height = Math.floor(viewport.height * outputScale);
+                
+                // Mas o tamanho visual via CSS continua sendo o tamanho original reduzido do PDF (que é os 70%)
+                canvas.style.width = Math.floor(viewport.width) + "px";
+                canvas.style.height = Math.floor(viewport.height) + "px";
+
+                // Passa o transform para o pdf.js saber que o canvas interno é maior
+                const transform = outputScale !== 1 
+                    ? [outputScale, 0, 0, outputScale, 0, 0] 
+                    : null;
 
                 const renderContext = {
                     canvasContext: ctx,
+                    transform: transform,
                     viewport: viewport
                 };
+                // --- FIM DA ALTERAÇÃO ---
+
                 const renderTask = page.render(renderContext);
 
                 renderTask.promise.then(() => {
@@ -389,6 +405,7 @@
                 });
             });
             document.getElementById('page-num').textContent = num;
+            updateZoom(); // Garante que a porcentagem será atualizada na barra de navegação
         }
 
         function queueRenderPage(num) {
