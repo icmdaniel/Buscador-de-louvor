@@ -105,7 +105,7 @@
             color: #000;
         }
         #lista-louvores th { background-color: #e0e0e0; font-weight: bold; }
-        #lista-louvores th:first-child { width: 80px; text-align: center; }
+        #lista-louvores th:first-child { width: 100px; text-align: center; }
         #lista-louvores th:nth-child(2) { text-align: center; }
         #lista-louvores td:first-child { text-align: center; }
         #lista-louvores td:nth-child(2) { text-align: left; padding-left: 15px; }
@@ -126,6 +126,7 @@
         @media (max-width: 600px) {
             #lista-louvores .sub-header { font-size: 18px; padding: 8px 12px; }
             #lista-louvores th, #lista-louvores td { padding: 10px 6px; font-size: 16px; }
+            #lista-louvores th:first-child { width: 85px; }
         }
     </style>
 </head>
@@ -161,6 +162,7 @@
                     <button onclick="salvarImagem(event)" class="bg-[#27ae60] hover:opacity-90 text-white px-5 py-3 rounded-lg font-bold shadow transition transform active:scale-95">💾 Salvar Imagem</button>
                     <button onclick="exportarECompartilhar(event)" class="bg-blue-600 hover:opacity-90 text-white px-5 py-3 rounded-lg font-bold shadow transition transform active:scale-95">📲 Compartilhar</button>
                     <button onclick="limparListaTabela()" class="bg-gray-600 hover:opacity-90 text-white px-5 py-3 rounded-lg font-bold shadow transition transform active:scale-95">🧹 Limpar</button>
+                    <button onclick="switchTab('tab-apresentacao')" class="bg-indigo-600 hover:opacity-90 text-white px-5 py-3 rounded-lg font-bold shadow transition transform active:scale-95">🎼 Coletâneas cifradas e partituras</button>
                 </div>
 
                 <div class="capture-wrapper bg-white p-4 rounded-xl shadow-lg w-full max-w-[640px] overflow-x-auto">
@@ -200,44 +202,56 @@
         </section>
 
         <!-- ABA 2: APRESENTAÇÃO DA LISTA -->
-        <section id="tab-apresentacao" class="w-full h-full flex flex-col absolute inset-0 hidden bg-gray-200">
-            <div class="bg-gray-800 text-white p-2 flex flex-col items-center gap-2 shadow-md z-10 shrink-0 text-sm">
-                <!-- Parte Superior: Número e Título do Louvor -->
-                <div class="flex flex-col items-center mx-2 text-center">
-                    <span class="font-bold truncate max-w-[280px] sm:max-w-[500px] md:max-w-[700px] text-blue-300" id="pres-hino-nome">Nenhum louvor mapeado</span>
-                    <span id="pres-contador" class="text-gray-400 text-xs">0 / 0</span>
-                </div>
-                
-                <!-- Parte Inferior: Botões Anterior, Próximo e Zoom -->
-                <div class="flex flex-wrap justify-center items-center gap-2 md:gap-4 text-sm w-full">
-                    <button id="pres-prev" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded flex items-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg> Anterior
-                    </button>
-                    
-                    <button id="pres-next" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded flex items-center">
-                        Próximo <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                    </button>
-                    
-                    <div class="hidden md:block border-l border-gray-600 h-6 mx-2"></div>
-                    
-                    <button id="pres-zoom-out" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">- Zoom</button>
-                    <span id="pres-zoom-val">70%</span>
-                    <button id="pres-zoom-in" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">+ Zoom</button>
+        <section id="tab-apresentacao" class="w-full h-full relative hidden bg-gray-200">
+            
+            <!-- MENU DE ESCOLHA DE INSTRUMENTO -->
+            <div id="pres-menu-instrumentos" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 z-50 p-6 overflow-y-auto">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Escolha o Instrumento para Apresentação</h2>
+                <div id="pres-instrument-list" class="flex flex-col gap-4 w-full max-w-md">
+                    <!-- Gerado dinamicamente -->
                 </div>
             </div>
-            
-            <div class="relative flex-grow w-full h-full overflow-hidden">
-                <div id="pdf-container-pres" class="w-full h-full overflow-auto">
-                    <canvas id="pdf-canvas-pres"></canvas>
-                </div>
 
-                <!-- Setas de navegação laterais com remoção rápida de foco/opacidade ao clicar -->
-                <button id="pres-prev-arrow" onclick="this.blur()" onmouseleave="this.blur()" class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 p-3 bg-black/20 active:bg-black/60 text-white/60 md:hover:text-white rounded-full opacity-35 active:opacity-90 md:hover:opacity-90 transition-opacity duration-150 z-20 shadow-md focus:outline-none" title="Anterior">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
-                </button>
-                <button id="pres-next-arrow" onclick="this.blur()" onmouseleave="this.blur()" class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-3 bg-black/20 active:bg-black/60 text-white/60 md:hover:text-white rounded-full opacity-35 active:opacity-90 md:hover:opacity-90 transition-opacity duration-150 z-20 shadow-md focus:outline-none" title="Próximo">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
-                </button>
+            <!-- VISUALIZADOR DA APRESENTAÇÃO (Inicia oculto) -->
+            <div id="pres-viewer-container" class="absolute inset-0 hidden flex-col w-full h-full">
+                <div class="bg-gray-800 text-white p-2 flex flex-col items-center gap-2 shadow-md z-10 shrink-0 text-sm">
+                    <div class="flex w-full items-center justify-between px-2">
+                        <button onclick="voltarMenuApresentacao()" class="px-3 py-1 bg-red-600 hover:bg-red-500 text-white rounded text-xs font-bold shadow">← Voltar</button>
+                        
+                        <div class="flex flex-col items-center mx-2 text-center flex-grow">
+                            <span class="font-bold truncate max-w-[150px] sm:max-w-[400px] md:max-w-[600px] text-blue-300" id="pres-hino-nome">Nenhum louvor mapeado</span>
+                            <span id="pres-contador" class="text-gray-400 text-xs">0 / 0</span>
+                        </div>
+                        
+                        <div class="w-[60px]"></div> <!-- Espaçador para centralizar o titulo -->
+                    </div>
+                    
+                    <div class="flex flex-wrap justify-center items-center gap-2 md:gap-4 text-sm w-full">
+                        <button id="pres-prev" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg> Anterior
+                        </button>
+                        <button id="pres-next" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded flex items-center">
+                            Próximo <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                        <div class="hidden md:block border-l border-gray-600 h-6 mx-2"></div>
+                        <button id="pres-zoom-out" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">- Zoom</button>
+                        <span id="pres-zoom-val">70%</span>
+                        <button id="pres-zoom-in" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">+ Zoom</button>
+                    </div>
+                </div>
+                
+                <div class="relative flex-grow w-full h-full overflow-hidden">
+                    <div id="pdf-container-pres" class="w-full h-full overflow-auto">
+                        <canvas id="pdf-canvas-pres"></canvas>
+                    </div>
+
+                    <button id="pres-prev-arrow" onclick="this.blur()" onmouseleave="this.blur()" class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 p-3 bg-black/20 active:bg-black/60 text-white/60 md:hover:text-white rounded-full opacity-35 active:opacity-90 md:hover:opacity-90 transition-opacity duration-150 z-20 shadow-md focus:outline-none" title="Anterior">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <button id="pres-next-arrow" onclick="this.blur()" onmouseleave="this.blur()" class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-3 bg-black/20 active:bg-black/60 text-white/60 md:hover:text-white rounded-full opacity-35 active:opacity-90 md:hover:opacity-90 transition-opacity duration-150 z-20 shadow-md focus:outline-none" title="Próximo">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
             </div>
         </section>
 
@@ -257,12 +271,10 @@
 
             <div id="pdf-panel" class="w-full md:w-2/3 lg:w-3/4 flex flex-col h-full bg-gray-200 relative">
                 <div class="bg-gray-800 text-white p-2 flex flex-col items-center gap-2 shadow-md z-10 shrink-0 text-sm">
-                    <!-- Parte Superior: Contador de Páginas -->
                     <div class="flex flex-col items-center mx-2 text-center">
                         <span class="font-bold text-blue-300">Página <span id="page-num">0</span> de <span id="page-count">0</span></span>
                     </div>
                     
-                    <!-- Parte Inferior: Botões Anterior, Próxima, Busca e Zoom -->
                     <div class="flex flex-wrap justify-center items-center gap-2 md:gap-4 text-sm w-full">
                         <button onclick="document.getElementById('tab-consulta').classList.remove('show-pdf')" class="md:hidden px-3 py-1 bg-blue-600 hover:bg-blue-50 rounded flex items-center text-xs font-semibold">
                             ← Busca
@@ -291,66 +303,102 @@
 
         <!-- ABA 4: ÍNDICE -->
         <section id="tab-indice" class="w-full h-full bg-gray-50 p-6 absolute inset-0 hidden overflow-y-auto">
-            <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                <h2 class="text-xl font-bold text-gray-800 mb-2">Mapeamento Automático de Hinos</h2>
+            <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-20">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Mapeamento Automático de Hinos</h2>
                 
-                <div class="mb-6 bg-gray-100 p-4 rounded-lg border border-gray-300 flex flex-col items-start gap-3">
-                    <div class="w-full">
-                        <label class="block text-sm font-bold text-gray-700 mb-1">1º Passo: Link do PDF no GitHub</label>
-                        <p class="text-xs text-gray-500 mb-2">Atenção: Utilize o link direto (Raw) do arquivo no GitHub.</p>
-                        <div class="flex flex-col sm:flex-row w-full gap-2">
-                            <input type="text" id="pdf-github-link" placeholder="Cole o link Raw aqui (ex: https://raw.githubusercontent.com/...)" class="flex-grow p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                            <button id="btn-load-github" class="bg-blue-700 hover:bg-blue-600 text-white px-6 py-2 rounded transition flex items-center justify-center gap-2 shadow-md shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
-                                Salvar e Carregar PDF
-                            </button>
-                        </div>
-                    </div>
-                    <span id="upload-status" class="text-sm text-gray-600 font-semibold mt-1">Nenhum link salvo</span>
-                </div>
-
-                <p class="text-gray-600 text-sm mb-4">
-                    Cole abaixo a sua relação de hinos (um por linha). O sistema vai cruzar esta lista com o texto original do PDF e encontrar a página exata automaticamente!
+                <p class="text-gray-600 text-sm mb-6">
+                    Configure os links dos PDFs e os intervalos de páginas para cada instrumento em seus respectivos menus. Cole as listas de hinos para que o sistema cruze com o texto dos PDFs!
                 </p>
 
-                <div class="mt-6 mb-2 border-b border-gray-200 pb-2">
-                    <h3 class="text-lg font-bold text-gray-700">1. Louvores Adultos</h3>
-                </div>
-                <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex flex-wrap items-center gap-6">
-                    <span class="text-sm font-bold text-blue-900">Intervalo de Varredura (Adultos):</span>
-                    <div class="flex items-center gap-2">
-                        <label for="start-page" class="text-sm font-semibold text-gray-700">Pág. Inicial:</label>
-                        <input type="number" id="start-page" min="1" value="1" class="w-20 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
+                <!-- Menu Suspenso Principal (Vozes / Padrão) -->
+                <div class="mb-4 border border-blue-200 bg-white rounded-lg shadow-sm relative">
+                    <!-- CABEÇALHO DA SANFONA -->
+                    <div class="bg-blue-50 hover:bg-blue-100 p-4 flex justify-between items-center cursor-pointer rounded-t-lg transition" onclick="toggleInst('padrao')">
+                        <h3 class="text-md font-bold text-blue-900">🎤 Instrumento Principal: <span id="display-nome-padrao">Vozes / Padrão</span></h3>
+                        <span class="text-blue-600 font-bold transform transition-transform text-sm" id="icon-padrao">▲ Recolher</span>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <label for="end-page" class="text-sm font-semibold text-gray-700">Pág. Final:</label>
-                        <input type="number" id="end-page" min="1" placeholder="Ex: 311" class="w-24 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
-                    </div>
-                    <span class="text-xs text-gray-500">(Deixe em branco para varrer até o fim)</span>
-                </div>
-                <textarea id="hymn-list-input" rows="8" class="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm mb-6" placeholder="1 - O SANGUE DE JESUS TEM PODER
-2 - O SANGUE DE JESUS TEM PODER PARA SALVAR
-3 - CLAMO A TI..."></textarea>
-                
-                <div class="mt-2 mb-2 border-b border-gray-200 pb-2">
-                    <h3 class="text-lg font-bold text-gray-700">2. Louvores das Crianças (CIAS)</h3>
-                </div>
-                <div class="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg flex flex-wrap items-center gap-6">
-                    <span class="text-sm font-bold text-purple-900">Intervalo de Varredura (CIAS):</span>
-                    <div class="flex items-center gap-2">
-                        <label for="cias-start-page" class="text-sm font-semibold text-gray-700">Pág. Inicial:</label>
-                        <input type="number" id="cias-start-page" min="1" value="1" class="w-20 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm bg-white">
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <label for="cias-end-page" class="text-sm font-semibold text-gray-700">Pág. Final:</label>
-                        <input type="number" id="cias-end-page" min="1" placeholder="Ex: 500" class="w-24 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm bg-white">
-                    </div>
-                    <span class="text-xs text-gray-500">(Deixe em branco para varrer até o fim)</span>
-                </div>
-                <textarea id="cias-hymn-list-input" rows="8" class="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm mb-6" placeholder="(CIAS) 01 - O sangue de Jesus tem poder
-(CIAS) 02 - Pai, estou a te clamar..."></textarea>
+                    
+                    <!-- CORPO DA SANFONA -->
+                    <div id="inst-body-padrao" class="flex p-4 border-t border-blue-200 flex-col gap-4">
+                        
+                        <!-- Links PDFs Padrão -->
+                        <div class="w-full mb-2">
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Links dos PDFs (Diretos/Raw do GitHub)</label>
+                            <div class="flex flex-col gap-2 w-full">
+                                <div class="flex gap-2 w-full">
+                                    <input type="text" id="nome-padrao" placeholder="Nome (ex: Vozes / Padrão)" value="Vozes / Padrão" oninput="document.getElementById('display-nome-padrao').textContent = this.value || 'Vozes / Padrão'" class="w-1/3 sm:w-1/4 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                    <input type="text" id="pdf-github-link" placeholder="Link Raw do PDF Principal (Adultos e CIAS) - ex: https://raw.githubusercontent..." class="w-2/3 sm:w-3/4 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                </div>
+                                <input type="text" id="pdf-avulsos-link" placeholder="Link Raw do PDF de Louvores Avulsos - ex: https://raw.githubusercontent..." class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
+                            </div>
+                        </div>
 
-                <div class="flex items-center gap-4">
+                        <!-- 1. Adultos -->
+                        <div class="bg-blue-50 p-3 border border-blue-200 rounded-lg">
+                            <span class="text-sm font-bold text-blue-900 mb-2 block">1. Louvores Adultos</span>
+                            <div class="flex flex-wrap items-center gap-4 mb-2">
+                                <div class="flex items-center gap-2">
+                                    <label for="start-page" class="text-sm font-semibold text-gray-700">Pág. Inicial:</label>
+                                    <input type="number" id="start-page" min="1" value="1" class="w-20 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label for="end-page" class="text-sm font-semibold text-gray-700">Pág. Final:</label>
+                                    <input type="number" id="end-page" min="1" placeholder="Ex: 311" class="w-24 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
+                                </div>
+                            </div>
+                            <textarea id="hymn-list-input" rows="4" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm" placeholder="Cole a relação de adultos (1 - O SANGUE DE JESUS TEM PODER...)"></textarea>
+                        </div>
+
+                        <!-- 2. CIAS -->
+                        <div class="bg-purple-50 p-3 border border-purple-200 rounded-lg">
+                            <span class="text-sm font-bold text-purple-900 mb-2 block">2. Louvores das Crianças (CIAS)</span>
+                            <div class="flex flex-wrap items-center gap-4 mb-2">
+                                <div class="flex items-center gap-2">
+                                    <label for="cias-start-page" class="text-sm font-semibold text-gray-700">Pág. Inicial:</label>
+                                    <input type="number" id="cias-start-page" min="1" value="1" class="w-20 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm bg-white">
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label for="cias-end-page" class="text-sm font-semibold text-gray-700">Pág. Final:</label>
+                                    <input type="number" id="cias-end-page" min="1" placeholder="Ex: 500" class="w-24 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm bg-white">
+                                </div>
+                            </div>
+                            <textarea id="cias-hymn-list-input" rows="4" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm" placeholder="Cole a relação CIAS ((CIAS) 01 - O sangue de Jesus tem poder...)"></textarea>
+                        </div>
+
+                        <!-- 3. Avulsos -->
+                        <div class="bg-emerald-50 p-3 border border-emerald-200 rounded-lg">
+                            <span class="text-sm font-bold text-emerald-900 mb-2 block">3. Louvores Avulsos (Padrão)</span>
+                            <div class="flex flex-wrap items-center gap-4 mb-2">
+                                <div class="flex items-center gap-2">
+                                    <label for="avulsos-start-page" class="text-sm font-semibold text-gray-700">Pág. Inicial:</label>
+                                    <input type="number" id="avulsos-start-page" min="1" value="1" class="w-20 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white">
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label for="avulsos-end-page" class="text-sm font-semibold text-gray-700">Pág. Final:</label>
+                                    <input type="number" id="avulsos-end-page" min="1" placeholder="Ex: 150" class="w-24 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white">
+                                </div>
+                            </div>
+                            <textarea id="avulsos-hymn-list-input" rows="4" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-sm" placeholder="Cole a relação de avulsos ((AVULSO) 01 - Nome...)"></textarea>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Container Dinâmico para Instrumentos Extras -->
+                <div id="dynamic-instruments-container" class="w-full mb-4"></div>
+
+                <div class="flex flex-wrap gap-2 mt-2 w-full mb-6">
+                    <button onclick="adicionarInstrumento()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded transition flex items-center justify-center gap-2 shadow-md text-sm">
+                        ➕ Adicionar Instrumento
+                    </button>
+                    <button id="btn-load-github" class="bg-blue-700 hover:bg-blue-600 text-white flex-1 sm:flex-none px-6 py-2 rounded transition flex items-center justify-center gap-2 shadow-md text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                        1º Passo: Salvar e Carregar PDFs
+                    </button>
+                    <span id="upload-status" class="text-sm text-gray-600 font-semibold mt-2 w-full text-center sm:text-left sm:w-auto">Nenhum link salvo</span>
+                </div>
+
+                <div class="flex items-center gap-4 pt-4 border-t border-gray-200">
                     <button id="btn-process" onclick="processAndMapHymns()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow transition flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
                         2º Passo: Processar, Mapear e Salvar
@@ -393,7 +441,13 @@
 
     <script>
         /* --- VARIÁVEIS GLOBAIS --- */
-        let pdfDoc = null;
+        let pdfDoc = null; // Principal (Adultos e Cias)
+        let pdfDocAvulsos = null; // Coletânea Avulsos
+        
+        let instrumentosExtra = []; // Armazena configurações e PDFs dos instrumentos extras
+        let selectedInstrumentPres = null; // Controle do instrumento selecionado na apresentação
+        
+        let activePdfConsulta = null; // Qual PDF está sendo renderizado na aba Consulta
         let pageNum = 1;
         let pageRendering = false;
         let pageNumPending = null;
@@ -411,6 +465,129 @@
         let currentPresentationIndex = 0;
         
         let hymnsData = JSON.parse(localStorage.getItem('icm_hymns_data')) || [];
+
+        /* --- CONTROLE DE INSTRUMENTOS EXTRAS E SANFONAS --- */
+        function adicionarInstrumento() {
+            const nome = prompt("Qual o nome do instrumento? (ex: Violão, Flauta)");
+            if (!nome || nome.trim() === '') return;
+            
+            const id = 'inst_' + Date.now();
+            instrumentosExtra.push({
+                id: id,
+                nome: nome.trim(),
+                pdfUrl: '',
+                pdfAvulsosUrl: '',
+                adultosStartPage: 1, adultosEndPage: '', adultosList: '', mappedAdultos: [],
+                ciasStartPage: 1, ciasEndPage: '', ciasList: '', mappedCias: [],
+                avulsosStartPage: 1, avulsosEndPage: '', avulsosList: '', mappedAvulsos: [],
+                pdfDoc: null,
+                pdfDocAvulsos: null
+            });
+            renderInstrumentosExtra();
+        }
+
+        function removerInstrumento(id) {
+            if(confirm("Tem certeza que deseja remover este instrumento?")) {
+                instrumentosExtra = instrumentosExtra.filter(i => i.id !== id);
+                renderInstrumentosExtra();
+            }
+        }
+
+        window.toggleInst = function(id) {
+            const body = document.getElementById(`inst-body-${id}`);
+            const icon = document.getElementById(`icon-${id}`);
+            if(body.classList.contains('hidden')) {
+                body.classList.remove('hidden');
+                body.classList.add('flex');
+                icon.textContent = '▲ Recolher';
+            } else {
+                body.classList.add('hidden');
+                body.classList.remove('flex');
+                icon.textContent = '▼ Expandir';
+            }
+        };
+
+        function renderInstrumentosExtra() {
+            const container = document.getElementById('dynamic-instruments-container');
+            container.innerHTML = '';
+            
+            instrumentosExtra.forEach(inst => {
+                container.innerHTML += `
+                <div class="mt-4 border border-indigo-200 bg-white rounded-lg shadow-sm relative">
+                    <!-- CABEÇALHO DA SANFONA -->
+                    <div class="bg-indigo-50 hover:bg-indigo-100 p-4 flex justify-between items-center cursor-pointer rounded-t-lg transition" onclick="toggleInst('${inst.id}')">
+                        <h3 class="text-md font-bold text-indigo-900">🎸 Instrumento: <span id="display-nome-${inst.id}">${inst.nome}</span></h3>
+                        <span class="text-indigo-600 font-bold transform transition-transform text-sm" id="icon-${inst.id}">▼ Expandir</span>
+                    </div>
+                    
+                    <!-- CORPO DA SANFONA -->
+                    <div id="inst-body-${inst.id}" class="hidden p-4 border-t border-indigo-200 flex-col gap-4">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-sm font-bold text-gray-700">Configurações e Links (${inst.nome})</label>
+                            <button onclick="removerInstrumento('${inst.id}')" class="text-red-500 hover:text-red-700 font-bold text-xs p-1">❌ Remover Instrumento</button>
+                        </div>
+                        
+                        <div class="flex flex-col gap-2 w-full mb-2">
+                            <div class="flex gap-2 w-full">
+                                <input type="text" id="inst-${inst.id}-nome" value="${inst.nome}" oninput="document.getElementById('display-nome-${inst.id}').textContent = this.value" placeholder="Nome (ex: Violão)" class="w-1/3 sm:w-1/4 p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <input type="text" id="inst-${inst.id}-pdfUrl" value="${inst.pdfUrl || ''}" placeholder="Link PDF Principal (Adultos e CIAS)..." class="w-2/3 sm:w-3/4 p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <input type="text" id="inst-${inst.id}-pdfAvulsosUrl" value="${inst.pdfAvulsosUrl || ''}" placeholder="Link PDF Avulsos..." class="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+
+                        <!-- 1. Adultos -->
+                        <div class="bg-blue-50 p-3 border border-blue-200 rounded-lg">
+                            <span class="text-xs font-bold text-blue-900 mb-2 block">1. Louvores Adultos (${inst.nome})</span>
+                            <div class="flex flex-wrap items-center gap-4 mb-2">
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-semibold text-gray-700">Pág. Inicial:</label>
+                                    <input type="number" id="inst-${inst.id}-adultos-start" min="1" value="${inst.adultosStartPage || 1}" class="w-16 p-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-semibold text-gray-700">Pág. Final:</label>
+                                    <input type="number" id="inst-${inst.id}-adultos-end" min="1" value="${inst.adultosEndPage || ''}" placeholder="Fim" class="w-20 p-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                </div>
+                            </div>
+                            <textarea id="inst-${inst.id}-adultos-list" rows="3" class="w-full p-2 border border-gray-300 rounded font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Cole a relação de adultos para ${inst.nome}...">${inst.adultosList || ''}</textarea>
+                        </div>
+
+                        <!-- 2. CIAS -->
+                        <div class="bg-purple-50 p-3 border border-purple-200 rounded-lg">
+                            <span class="text-xs font-bold text-purple-900 mb-2 block">2. Louvores das Crianças (CIAS) (${inst.nome})</span>
+                            <div class="flex flex-wrap items-center gap-4 mb-2">
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-semibold text-gray-700">Pág. Inicial:</label>
+                                    <input type="number" id="inst-${inst.id}-cias-start" min="1" value="${inst.ciasStartPage || 1}" class="w-16 p-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-purple-500">
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-semibold text-gray-700">Pág. Final:</label>
+                                    <input type="number" id="inst-${inst.id}-cias-end" min="1" value="${inst.ciasEndPage || ''}" placeholder="Fim" class="w-20 p-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-purple-500">
+                                </div>
+                            </div>
+                            <textarea id="inst-${inst.id}-cias-list" rows="3" class="w-full p-2 border border-gray-300 rounded font-mono text-xs focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="(CIAS) Cole a relação para ${inst.nome}...">${inst.ciasList || ''}</textarea>
+                        </div>
+
+                        <!-- 3. Avulsos -->
+                        <div class="bg-emerald-50 p-3 border border-emerald-200 rounded-lg">
+                            <span class="text-xs font-bold text-emerald-900 mb-2 block">3. Louvores Avulsos (${inst.nome})</span>
+                            <div class="flex flex-wrap items-center gap-4 mb-2">
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-semibold text-gray-700">Pág. Inicial:</label>
+                                    <input type="number" id="inst-${inst.id}-avulsos-start" min="1" value="${inst.avulsosStartPage || 1}" class="w-16 p-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-semibold text-gray-700">Pág. Final:</label>
+                                    <input type="number" id="inst-${inst.id}-avulsos-end" min="1" value="${inst.avulsosEndPage || ''}" placeholder="Fim" class="w-20 p-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                                </div>
+                            </div>
+                            <textarea id="inst-${inst.id}-avulsos-list" rows="3" class="w-full p-2 border border-gray-300 rounded font-mono text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="(AVULSO) Cole a relação de avulsos para ${inst.nome}...">${inst.avulsosList || ''}</textarea>
+                        </div>
+
+                    </div>
+                </div>`;
+            });
+        }
+
 
         /* --- CONTROLE DE ABAS --- */
         function switchTab(tabId) {
@@ -438,9 +615,10 @@
                 }
             });
 
-            // Se mudou para a aba de apresentação, atualiza a lista e renderiza
             if(tabId === 'tab-apresentacao') {
-                carregarListaApresentacao();
+                document.getElementById('pres-viewer-container').classList.add('hidden');
+                document.getElementById('pres-menu-instrumentos').classList.remove('hidden');
+                renderPresMenu();
             }
         }
 
@@ -462,35 +640,73 @@
                 if (docSnap.exists()) {
                     const data = docSnap.data();
 
+                    if(data.nomePadrao) {
+                        document.getElementById('nome-padrao').value = data.nomePadrao;
+                        document.getElementById('display-nome-padrao').textContent = data.nomePadrao;
+                    }
                     if(data.startPage) document.getElementById('start-page').value = data.startPage;
                     if(data.endPage) document.getElementById('end-page').value = data.endPage;
                     if(data.ciasStartPage) document.getElementById('cias-start-page').value = data.ciasStartPage;
                     if(data.ciasEndPage) document.getElementById('cias-end-page').value = data.ciasEndPage;
+                    if(data.avulsosStartPage) document.getElementById('avulsos-start-page').value = data.avulsosStartPage;
+                    if(data.avulsosEndPage) document.getElementById('avulsos-end-page').value = data.avulsosEndPage;
 
                     if(data.hymnList) document.getElementById('hymn-list-input').value = data.hymnList;
                     if(data.ciasHymnList) document.getElementById('cias-hymn-list-input').value = data.ciasHymnList;
+                    if(data.avulsosHymnList) document.getElementById('avulsos-hymn-list-input').value = data.avulsosHymnList;
 
                     if(data.hymnsData) {
                         hymnsData = data.hymnsData;
                         renderHymnsList(hymnsData);
                     }
 
+                    if(data.instrumentosExtra) {
+                        instrumentosExtra = data.instrumentosExtra.map(i => ({
+                            id: i.id, nome: i.nome, pdfUrl: i.pdfUrl, pdfAvulsosUrl: i.pdfAvulsosUrl,
+                            adultosStartPage: i.adultosStartPage || 1, adultosEndPage: i.adultosEndPage || '', adultosList: i.adultosList || '', mappedAdultos: i.mappedAdultos || [],
+                            ciasStartPage: i.ciasStartPage || 1, ciasEndPage: i.ciasEndPage || '', ciasList: i.ciasList || '', mappedCias: i.mappedCias || [],
+                            avulsosStartPage: i.avulsosStartPage || 1, avulsosEndPage: i.avulsosEndPage || '', avulsosList: i.avulsosList || '', mappedAvulsos: i.mappedAvulsos || [],
+                            pdfDoc: null, pdfDocAvulsos: null
+                        }));
+                        renderInstrumentosExtra();
+                    }
+
+                    let loadPromises = [];
                     if (data.pdfUrl) {
                         document.getElementById('pdf-github-link').value = data.pdfUrl;
-                        document.getElementById('upload-status').textContent = "Carregando PDF salvo na nuvem...";
-                        
+                        loadPromises.push(loadPdfFromUrl(data.pdfUrl).then(doc => { pdfDoc = doc; activePdfConsulta = doc; }));
+                    }
+                    if (data.pdfAvulsosUrl) {
+                        document.getElementById('pdf-avulsos-link').value = data.pdfAvulsosUrl;
+                        loadPromises.push(loadPdfFromUrl(data.pdfAvulsosUrl).then(doc => { pdfDocAvulsos = doc; }));
+                    }
+
+                    instrumentosExtra.forEach(inst => {
+                        if (inst.pdfUrl) loadPromises.push(loadPdfFromUrl(inst.pdfUrl).then(doc => { inst.pdfDoc = doc; }));
+                        if (inst.pdfAvulsosUrl) loadPromises.push(loadPdfFromUrl(inst.pdfAvulsosUrl).then(doc => { inst.pdfDocAvulsos = doc; }));
+                    });
+
+                    if (loadPromises.length > 0) {
+                        document.getElementById('upload-status').textContent = "Carregando PDFs salvos na nuvem...";
                         try {
-                            pdfDoc = await loadPdfFromUrl(data.pdfUrl);
-                            document.getElementById('page-count').textContent = pdfDoc.numPages;
-                            document.getElementById('end-page').placeholder = pdfDoc.numPages;
-                            document.getElementById('cias-end-page').placeholder = pdfDoc.numPages;
-                            renderPage(1); // Renderiza na aba de consulta para cache
+                            await Promise.all(loadPromises);
+                            
+                            if (pdfDoc) {
+                                document.getElementById('page-count').textContent = pdfDoc.numPages;
+                                document.getElementById('end-page').placeholder = pdfDoc.numPages;
+                                document.getElementById('cias-end-page').placeholder = pdfDoc.numPages;
+                                renderPage(1); 
+                            }
+                            if (pdfDocAvulsos) {
+                                document.getElementById('avulsos-end-page').placeholder = pdfDocAvulsos.numPages;
+                            }
+                            
                             document.getElementById('upload-status').textContent = "Pronto para o uso";
-                            document.getElementById('upload-status').className = "text-sm font-semibold text-green-600";
+                            document.getElementById('upload-status').className = "text-sm font-semibold text-green-600 w-full text-center sm:text-left sm:w-auto";
                         } catch (err) {
-                            console.error("Erro ao carregar PDF:", err);
-                            document.getElementById('upload-status').textContent = "Erro ao carregar PDF. Verifique o link.";
-                            document.getElementById('upload-status').className = "text-sm font-semibold text-red-600";
+                            console.error("Erro ao carregar PDF(s):", err);
+                            document.getElementById('upload-status').textContent = "Erro parcial ao carregar PDF(s). Verifique os links.";
+                            document.getElementById('upload-status').className = "text-sm font-semibold text-yellow-600 w-full text-center sm:text-left sm:w-auto";
                         }
                     }
                 } else {
@@ -503,33 +719,69 @@
         });
 
         document.getElementById('btn-load-github').addEventListener('click', async function() {
-            const linkInput = document.getElementById('pdf-github-link').value.trim();
-            if (!linkInput) {
-                alert("Por favor, cole um link RAW do GitHub.");
-                return;
-            }
+            // Atualiza variaveis do array com o que foi digitado antes de baixar
+            instrumentosExtra.forEach(inst => {
+                const nomeEl = document.getElementById(`inst-${inst.id}-nome`);
+                const urlEl = document.getElementById(`inst-${inst.id}-pdfUrl`);
+                const urlAvulsoEl = document.getElementById(`inst-${inst.id}-pdfAvulsosUrl`);
+                if(nomeEl) inst.nome = nomeEl.value.trim() || inst.nome;
+                if(urlEl) inst.pdfUrl = urlEl.value.trim();
+                if(urlAvulsoEl) inst.pdfAvulsosUrl = urlAvulsoEl.value.trim();
+            });
 
+            const linkInput = document.getElementById('pdf-github-link').value.trim();
+            const linkAvulsos = document.getElementById('pdf-avulsos-link').value.trim();
+            
             const statusEl = document.getElementById('upload-status');
-            statusEl.textContent = "Processando link do GitHub...";
-            statusEl.className = "text-sm font-semibold text-blue-600 animate-pulse";
+            statusEl.textContent = "Processando links e baixando PDFs...";
+            statusEl.className = "text-sm font-semibold text-blue-600 animate-pulse w-full text-center sm:text-left sm:w-auto";
 
             try {
-                pdfDoc = await loadPdfFromUrl(linkInput);
-                document.getElementById('page-count').textContent = pdfDoc.numPages;
-                document.getElementById('end-page').placeholder = pdfDoc.numPages;
-                document.getElementById('cias-end-page').placeholder = pdfDoc.numPages;
-                renderPage(1);
+                let loadPromisesExtras = [];
+
+                if (linkInput) {
+                    loadPromisesExtras.push(loadPdfFromUrl(linkInput).then(doc => {
+                        pdfDoc = doc; activePdfConsulta = doc;
+                        document.getElementById('page-count').textContent = pdfDoc.numPages;
+                        document.getElementById('end-page').placeholder = pdfDoc.numPages;
+                        document.getElementById('cias-end-page').placeholder = pdfDoc.numPages;
+                        renderPage(1);
+                    }));
+                }
+                
+                if (linkAvulsos) {
+                    loadPromisesExtras.push(loadPdfFromUrl(linkAvulsos).then(doc => {
+                        pdfDocAvulsos = doc;
+                        document.getElementById('avulsos-end-page').placeholder = pdfDocAvulsos.numPages;
+                    }));
+                }
+
+                instrumentosExtra.forEach(inst => {
+                    if (inst.pdfUrl) loadPromisesExtras.push(loadPdfFromUrl(inst.pdfUrl).then(doc => inst.pdfDoc = doc));
+                    if (inst.pdfAvulsosUrl) loadPromisesExtras.push(loadPdfFromUrl(inst.pdfAvulsosUrl).then(doc => inst.pdfDocAvulsos = doc));
+                });
+
+                await Promise.all(loadPromisesExtras);
                 
                 const docRef = window.fbDoc(window.db, "configuracoes", "geral");
-                await window.fbSetDoc(docRef, { pdfUrl: linkInput }, { merge: true });
+                await window.fbSetDoc(docRef, { 
+                    nomePadrao: document.getElementById('nome-padrao').value,
+                    pdfUrl: linkInput, 
+                    pdfAvulsosUrl: linkAvulsos,
+                    instrumentosExtra: instrumentosExtra.map(i => ({
+                        id: i.id, nome: i.nome, pdfUrl: i.pdfUrl, pdfAvulsosUrl: i.pdfAvulsosUrl,
+                        adultosStartPage: i.adultosStartPage, adultosEndPage: i.adultosEndPage, adultosList: i.adultosList, mappedAdultos: i.mappedAdultos || [],
+                        ciasStartPage: i.ciasStartPage, ciasEndPage: i.ciasEndPage, ciasList: i.ciasList, mappedCias: i.mappedCias || [],
+                        avulsosStartPage: i.avulsosStartPage, avulsosEndPage: i.avulsosEndPage, avulsosList: i.avulsosList, mappedAvulsos: i.mappedAvulsos || []
+                    }))
+                }, { merge: true });
 
-                statusEl.className = "text-sm font-semibold text-green-600";
-                statusEl.textContent = "PDF carregado e salvo na nuvem com sucesso!";
+                statusEl.className = "text-sm font-semibold text-green-600 w-full text-center sm:text-left sm:w-auto";
+                statusEl.textContent = "PDF(s) carregado(s) e salvo(s) na nuvem com sucesso!";
             } catch (error) {
                 console.error("Erro ao carregar PDF", error);
-                statusEl.className = "text-sm font-semibold text-red-600";
-                statusEl.textContent = "Erro de leitura. Verifique se o link Raw está correto.";
-                alert("Não foi possível carregar o PDF.");
+                statusEl.className = "text-sm font-semibold text-red-600 w-full text-center sm:text-left sm:w-auto";
+                statusEl.textContent = "Erro de leitura. Verifique se os links Raw estão corretos.";
             }
         });
 
@@ -541,27 +793,34 @@
 
         document.getElementById('search-input').addEventListener('input', function(e) {
             let query = e.target.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            
             const isCiasSearch = query.includes("cias");
-            if (isCiasSearch) query = query.replace(/cias/g, "").trim();
+            const isAvulsoSearch = query.includes("avulso");
+            
+            let cleanQuery = query;
+            if (isCiasSearch) cleanQuery = cleanQuery.replace(/cias/g, "").trim();
+            if (isAvulsoSearch) cleanQuery = cleanQuery.replace(/avulso/g, "").trim();
+            if (isCiasSearch && isAvulsoSearch) cleanQuery = cleanQuery.replace(/(cias|avulso)/g, "").trim();
 
             const filtered = hymnsData.filter(h => {
                 if (isCiasSearch && h.category !== 'cias') return false;
-                if (isCiasSearch && query === "") return true;
+                if (isAvulsoSearch && h.category !== 'avulsos') return false;
+                if ((isCiasSearch || isAvulsoSearch) && cleanQuery === "") return true;
 
                 const searchStr = `${h.number || ''} ${h.title || ''} ${h.raw || ''}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                return searchStr.includes(query);
+                return searchStr.includes(cleanQuery);
             });
             renderHymnsList(filtered);
         });
 
         /* --- PDF.JS RENDERIZAÇÃO (CONSULTA) --- */
         function renderPage(num) {
-            if (!pdfDoc) return;
+            let docToUse = activePdfConsulta || pdfDoc;
+            if (!docToUse) return;
             pageRendering = true;
-            pdfDoc.getPage(num).then(page => {
+            docToUse.getPage(num).then(page => {
                 const viewport = page.getViewport({ scale: scale });
                 
-                // Aumenta a qualidade visual mantendo o tamanho no CSS
                 const outputScale = 3; 
                 canvas.width = Math.floor(viewport.width * outputScale);
                 canvas.height = Math.floor(viewport.height * outputScale);
@@ -580,13 +839,17 @@
                 });
             });
             document.getElementById('page-num').textContent = num;
+            document.getElementById('page-count').textContent = docToUse.numPages;
         }
 
         function queueRenderPage(num) {
             if (pageRendering) { pageNumPending = num; } else { renderPage(num); }
         }
         function onPrevPage() { if (pageNum > 1) { pageNum--; queueRenderPage(pageNum); } }
-        function onNextPage() { if (pageNum < pdfDoc.numPages) { pageNum++; queueRenderPage(pageNum); } }
+        function onNextPage() { 
+            let docToUse = activePdfConsulta || pdfDoc;
+            if (docToUse && pageNum < docToUse.numPages) { pageNum++; queueRenderPage(pageNum); } 
+        }
         function updateZoom() { document.getElementById('zoom-val').textContent = Math.round(scale * 100) + '%'; }
 
 
@@ -602,44 +865,62 @@
         }
 
         async function processAndMapHymns() {
-            if (!pdfDoc) { alert("Carregue o PDF primeiro!"); return; }
+            if (!pdfDoc) { alert("Carregue o PDF Principal (Padrão) primeiro!"); return; }
+
+            // Atualiza os valores dos instrumentos dinamicos para o objeto antes de processar
+            instrumentosExtra.forEach(inst => {
+                const nomeEl = document.getElementById(`inst-${inst.id}-nome`);
+                if(nomeEl) inst.nome = nomeEl.value.trim() || inst.nome;
+                
+                // Adultos
+                const adStart = document.getElementById(`inst-${inst.id}-adultos-start`);
+                const adEnd = document.getElementById(`inst-${inst.id}-adultos-end`);
+                const adList = document.getElementById(`inst-${inst.id}-adultos-list`);
+                if(adStart) inst.adultosStartPage = parseInt(adStart.value) || 1;
+                if(adEnd) inst.adultosEndPage = parseInt(adEnd.value) || (inst.pdfDoc ? inst.pdfDoc.numPages : 1);
+                if(adList) inst.adultosList = adList.value;
+
+                // Cias
+                const ciStart = document.getElementById(`inst-${inst.id}-cias-start`);
+                const ciEnd = document.getElementById(`inst-${inst.id}-cias-end`);
+                const ciList = document.getElementById(`inst-${inst.id}-cias-list`);
+                if(ciStart) inst.ciasStartPage = parseInt(ciStart.value) || 1;
+                if(ciEnd) inst.ciasEndPage = parseInt(ciEnd.value) || (inst.pdfDoc ? inst.pdfDoc.numPages : 1);
+                if(ciList) inst.ciasList = ciList.value;
+
+                // Avulsos
+                const avStart = document.getElementById(`inst-${inst.id}-avulsos-start`);
+                const avEnd = document.getElementById(`inst-${inst.id}-avulsos-end`);
+                const avList = document.getElementById(`inst-${inst.id}-avulsos-list`);
+                if(avStart) inst.avulsosStartPage = parseInt(avStart.value) || 1;
+                if(avEnd) inst.avulsosEndPage = parseInt(avEnd.value) || (inst.pdfDocAvulsos ? inst.pdfDocAvulsos.numPages : 1);
+                if(avList) inst.avulsosList = avList.value;
+            });
 
             const rawText = document.getElementById('hymn-list-input').value;
             const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             const ciasRawText = document.getElementById('cias-hymn-list-input').value;
             const ciasLines = ciasRawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-
-            if (lines.length === 0 && ciasLines.length === 0) return;
+            const avulsosRawText = document.getElementById('avulsos-hymn-list-input').value;
+            const avulsosLines = avulsosRawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
             let startPage = parseInt(document.getElementById('start-page').value) || 1;
             let endPage = parseInt(document.getElementById('end-page').value) || pdfDoc.numPages;
             let ciasStartPage = parseInt(document.getElementById('cias-start-page').value) || 1;
             let ciasEndPage = parseInt(document.getElementById('cias-end-page').value) || pdfDoc.numPages;
+            
+            let avulsosStartPage = parseInt(document.getElementById('avulsos-start-page').value) || 1;
+            let avulsosEndPage = pdfDocAvulsos ? (parseInt(document.getElementById('avulsos-end-page').value) || pdfDocAvulsos.numPages) : 1;
 
             const statusEl = document.getElementById('mapping-status');
             const btnEl = document.getElementById('btn-process');
             btnEl.disabled = true;
             statusEl.className = "text-sm font-semibold text-blue-600 animate-pulse";
-            statusEl.textContent = `Lendo e processando o PDF... Aguarde!`;
+            statusEl.textContent = `Lendo e processando os PDFs... Aguarde!`;
 
-            const minPage = Math.min(startPage, ciasStartPage);
-            const maxPage = Math.max(endPage, ciasEndPage);
-            
-            const pagesContent = [];
-            for (let i = minPage; i <= maxPage; i++) {
-                const page = await pdfDoc.getPage(i);
-                const textContent = await page.getTextContent();
-                const rawItems = textContent.items.map(item => item.str);
-                pagesContent.push({
-                    pageNum: i,
-                    textNormalized: normalizeStr(rawItems.join(' ')),
-                    rawItems: rawItems
-                });
-            }
-
-            function processCategory(targetLines, pStart, pEnd, categoryName) {
+            function processCategory(targetLines, pStart, pEnd, categoryName, contentRef) {
                 const mappedHymns = [];
-                const filteredPages = pagesContent.filter(p => p.pageNum >= pStart && p.pageNum <= pEnd);
+                const filteredPages = contentRef.filter(p => p.pageNum >= pStart && p.pageNum <= pEnd);
 
                 for (const line of targetLines) {
                     const match = line.match(/^[^\d]*(\d+)\s*[-.]\s*(.*)$/);
@@ -698,30 +979,119 @@
                 return mappedHymns;
             }
 
-            const mappedAdults = processCategory(lines, startPage, endPage, 'adult');
-            const mappedCias = processCategory(ciasLines, ciasStartPage, ciasEndPage, 'cias');
+            // Extração de texto Principal (Adultos/Cias) - PADRÃO
+            const minPagePrin = Math.min(startPage, ciasStartPage);
+            const maxPagePrin = Math.max(endPage, ciasEndPage);
+            const pagesContentPrincipal = [];
+            for (let i = minPagePrin; i <= maxPagePrin; i++) {
+                const page = await pdfDoc.getPage(i);
+                const textContent = await page.getTextContent();
+                const rawItems = textContent.items.map(item => item.str);
+                pagesContentPrincipal.push({ pageNum: i, textNormalized: normalizeStr(rawItems.join(' ')), rawItems: rawItems });
+            }
 
-            hymnsData = [...mappedAdults, ...mappedCias];
+            // Extração de texto Avulsos Padrão
+            const pagesContentAvulsos = [];
+            if (pdfDocAvulsos && avulsosLines.length > 0) {
+                for (let i = avulsosStartPage; i <= avulsosEndPage; i++) {
+                    const page = await pdfDocAvulsos.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const rawItems = textContent.items.map(item => item.str);
+                    pagesContentAvulsos.push({ pageNum: i, textNormalized: normalizeStr(rawItems.join(' ')), rawItems: rawItems });
+                }
+            }
+
+            const mappedAdults = processCategory(lines, startPage, endPage, 'adult', pagesContentPrincipal);
+            const mappedCias = processCategory(ciasLines, ciasStartPage, ciasEndPage, 'cias', pagesContentPrincipal);
+            const mappedAvulsos = (pdfDocAvulsos && avulsosLines.length > 0) ? processCategory(avulsosLines, avulsosStartPage, avulsosEndPage, 'avulsos', pagesContentAvulsos) : [];
+
+            // Extração e Mapeamento dos Instrumentos Extras (Adultos, CIAS, Avulsos separados)
+            for (let inst of instrumentosExtra) {
+                // PDF Principal (Adultos/Cias do Instrumento)
+                if (inst.pdfDoc) {
+                    let hasAdultos = inst.adultosList && inst.adultosList.trim().length > 0;
+                    let hasCias = inst.ciasList && inst.ciasList.trim().length > 0;
+                    
+                    if (hasAdultos || hasCias) {
+                        let minP = inst.pdfDoc.numPages;
+                        let maxP = 1;
+                        if(hasAdultos) { minP = Math.min(minP, inst.adultosStartPage); maxP = Math.max(maxP, inst.adultosEndPage || inst.pdfDoc.numPages); }
+                        if(hasCias) { minP = Math.min(minP, inst.ciasStartPage); maxP = Math.max(maxP, inst.ciasEndPage || inst.pdfDoc.numPages); }
+                        
+                        let pagesContentInstPrin = [];
+                        for (let i = minP; i <= maxP; i++) {
+                            const page = await inst.pdfDoc.getPage(i);
+                            const textContent = await page.getTextContent();
+                            const rawItems = textContent.items.map(item => item.str);
+                            pagesContentInstPrin.push({ pageNum: i, textNormalized: normalizeStr(rawItems.join(' ')), rawItems: rawItems });
+                        }
+
+                        if (hasAdultos) {
+                            let linesAd = inst.adultosList.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+                            inst.mappedAdultos = processCategory(linesAd, inst.adultosStartPage, inst.adultosEndPage || inst.pdfDoc.numPages, 'adult', pagesContentInstPrin);
+                        } else { inst.mappedAdultos = []; }
+
+                        if (hasCias) {
+                            let linesCi = inst.ciasList.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+                            inst.mappedCias = processCategory(linesCi, inst.ciasStartPage, inst.ciasEndPage || inst.pdfDoc.numPages, 'cias', pagesContentInstPrin);
+                        } else { inst.mappedCias = []; }
+                    } else {
+                        inst.mappedAdultos = [];
+                        inst.mappedCias = [];
+                    }
+                } else {
+                    inst.mappedAdultos = [];
+                    inst.mappedCias = [];
+                }
+
+                // PDF Avulsos do Instrumento
+                if (inst.pdfDocAvulsos && inst.avulsosList && inst.avulsosList.trim().length > 0) {
+                    let linesAv = inst.avulsosList.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+                    let endP = inst.avulsosEndPage || inst.pdfDocAvulsos.numPages;
+                    let pagesContentInstAv = [];
+                    for (let i = inst.avulsosStartPage; i <= endP; i++) {
+                        const page = await inst.pdfDocAvulsos.getPage(i);
+                        const textContent = await page.getTextContent();
+                        const rawItems = textContent.items.map(item => item.str);
+                        pagesContentInstAv.push({ pageNum: i, textNormalized: normalizeStr(rawItems.join(' ')), rawItems: rawItems });
+                    }
+                    inst.mappedAvulsos = processCategory(linesAv, inst.avulsosStartPage, endP, 'avulsos', pagesContentInstAv);
+                } else {
+                    inst.mappedAvulsos = [];
+                }
+            }
+
+            hymnsData = [...mappedAdults, ...mappedCias, ...mappedAvulsos];
             localStorage.setItem('icm_hymns_data', JSON.stringify(hymnsData));
             renderHymnsList(hymnsData);
 
             try {
                 const configData = {
+                    nomePadrao: document.getElementById('nome-padrao').value,
                     startPage: document.getElementById('start-page').value,
                     endPage: document.getElementById('end-page').value,
                     ciasStartPage: document.getElementById('cias-start-page').value,
                     ciasEndPage: document.getElementById('cias-end-page').value,
+                    avulsosStartPage: document.getElementById('avulsos-start-page').value,
+                    avulsosEndPage: document.getElementById('avulsos-end-page').value,
                     hymnList: document.getElementById('hymn-list-input').value,
                     ciasHymnList: document.getElementById('cias-hymn-list-input').value,
-                    hymnsData: hymnsData
+                    avulsosHymnList: document.getElementById('avulsos-hymn-list-input').value,
+                    hymnsData: hymnsData,
+                    instrumentosExtra: instrumentosExtra.map(i => ({
+                        id: i.id, nome: i.nome, pdfUrl: i.pdfUrl, pdfAvulsosUrl: i.pdfAvulsosUrl,
+                        adultosStartPage: i.adultosStartPage, adultosEndPage: i.adultosEndPage, adultosList: i.adultosList, mappedAdultos: i.mappedAdultos || [],
+                        ciasStartPage: i.ciasStartPage, ciasEndPage: i.ciasEndPage, ciasList: i.ciasList, mappedCias: i.mappedCias || [],
+                        avulsosStartPage: i.avulsosStartPage, avulsosEndPage: i.avulsosEndPage, avulsosList: i.avulsosList, mappedAvulsos: i.mappedAvulsos || []
+                    }))
                 };
                 const docRef = window.fbDoc(window.db, "configuracoes", "geral");
                 await window.fbSetDoc(docRef, configData, { merge: true });
                 statusEl.className = "text-sm font-semibold text-green-600";
-                statusEl.textContent = `Tudo salvo na nuvem com sucesso!`;
+                statusEl.textContent = `Tudo mapeado e salvo na nuvem com sucesso!`;
             } catch (error) {
                 statusEl.className = "text-sm font-semibold text-yellow-600";
-                statusEl.textContent = `Mapeado, mas erro ao salvar na nuvem.`;
+                statusEl.textContent = `Mapeado, mas ocorreu erro ao salvar na nuvem.`;
             }
             
             btnEl.disabled = false;
@@ -740,19 +1110,30 @@
             list.forEach(hymn => {
                 const div = document.createElement('div');
                 div.className = "p-3 border-b border-gray-100 hover:bg-blue-50 cursor-pointer transition flex items-center justify-between group";
-                const prefix = hymn.category === 'cias' ? `<span class="text-purple-600 font-bold text-xs mr-1">(CIAS)</span>` : '';
+                
+                let prefix = '';
+                if (hymn.category === 'cias') prefix = `<span class="text-purple-600 font-bold text-xs mr-1">(CIAS)</span>`;
+                if (hymn.category === 'avulsos') prefix = `<span class="text-emerald-600 font-bold text-xs mr-1">(AVULSO)</span>`;
+                
                 const label = hymn.number ? `${prefix}<span class="font-bold text-blue-800 w-8 inline-block">${hymn.number}</span> <span class="text-gray-700">${hymn.title}</span>` : `${prefix}<span class="text-gray-700">${hymn.title}</span>`;
                 const pageBadge = hymn.page ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full border border-blue-200">Pág ${hymn.page}</span>` : `<span class="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full">N/A</span>`;
 
                 div.innerHTML = `<div class="truncate text-sm flex-1 pr-2">${label}</div><div>${pageBadge}</div>`;
                 div.onclick = () => {
-                    if (hymn.page && pdfDoc) {
+                    if (hymn.page) {
+                        const targetDoc = hymn.category === 'avulsos' ? pdfDocAvulsos : pdfDoc;
+                        if (!targetDoc) {
+                            alert("O PDF correspondente a este hino não está carregado.");
+                            return;
+                        }
+                        
+                        activePdfConsulta = targetDoc;
                         pageNum = hymn.page;
                         queueRenderPage(pageNum);
                         document.getElementById('pdf-container').scrollTop = 0;
                         document.getElementById('tab-consulta').classList.add('show-pdf');
-                    } else if (!pdfDoc) {
-                        alert("Aguarde o carregamento do PDF!");
+                    } else {
+                        alert("Aguarde o carregamento do PDF ou verifique o mapeamento!");
                     }
                 };
                 container.appendChild(div);
@@ -764,7 +1145,41 @@
            LÓGICA DA APRESENTAÇÃO DA LISTA (ABA 2)
            ============================================================== */
 
-        // Controles da apresentação
+        function renderPresMenu() {
+            const container = document.getElementById('pres-instrument-list');
+            let nomePadrao = document.getElementById('nome-padrao') ? document.getElementById('nome-padrao').value.trim() : 'Vozes / Padrão';
+            if(!nomePadrao) nomePadrao = 'Vozes / Padrão';
+            
+            container.innerHTML = `
+                <button onclick="iniciarApresentacao('padrao')" class="w-full p-4 bg-gray-800 text-white rounded-lg shadow font-bold hover:bg-gray-700 transition transform active:scale-95 text-lg">
+                    🎤 ${nomePadrao}
+                </button>
+            `;
+            instrumentosExtra.forEach(inst => {
+                container.innerHTML += `
+                    <button onclick="iniciarApresentacao('${inst.id}')" class="w-full p-4 bg-indigo-600 text-white rounded-lg shadow font-bold hover:bg-indigo-500 transition transform active:scale-95 text-lg">
+                        🎸 ${inst.nome}
+                    </button>
+                `;
+            });
+        }
+
+        function iniciarApresentacao(id) {
+            selectedInstrumentPres = id;
+            document.getElementById('pres-menu-instrumentos').classList.add('hidden');
+            document.getElementById('pres-viewer-container').classList.remove('hidden');
+            document.getElementById('pres-viewer-container').classList.add('flex');
+            carregarListaApresentacao();
+        }
+
+        function voltarMenuApresentacao() {
+            document.getElementById('pres-viewer-container').classList.add('hidden');
+            document.getElementById('pres-viewer-container').classList.remove('flex');
+            document.getElementById('pres-menu-instrumentos').classList.remove('hidden');
+            // Limpar canvas
+            ctxPres.clearRect(0, 0, canvasPres.width, canvasPres.height);
+        }
+
         function presPrevPage() {
             if (currentPresentationIndex > 0) {
                 currentPresentationIndex--;
@@ -791,7 +1206,6 @@
             document.getElementById('pres-zoom-val').textContent = Math.round(presScale * 100) + '%';
         }
 
-        // Lê a tabela do Gerador e cria o Array de Apresentação
         function carregarListaApresentacao() {
             presentationPages = [];
             currentPresentationIndex = 0;
@@ -801,27 +1215,70 @@
                 const tds = linha.querySelectorAll('td');
                 const num = tds[0].textContent.trim();
                 const nome = tds[1].textContent.trim();
-                const pageAttr = linha.dataset.page; // Obtém a página salva no momento do clique
+                const pageAttr = linha.dataset.page; 
+                const catAttr = linha.dataset.category; 
                 
                 if (num || nome) {
                     let pageNum = pageAttr ? parseInt(pageAttr) : null;
+                    let cat = catAttr || 'adult';
                     
-                    // Fallback: se o usuário digitou na mão, tenta buscar em hymnsData
                     if (!pageNum && hymnsData.length > 0) {
                         let found = hymnsData.find(h => {
-                            let cleanNum = num ? num.replace('(CIAS)','').trim() : null;
+                            let cleanNum = num ? num.replace('(CIAS)','').replace('(AVULSO)','').trim() : null;
                             let matchNum = h.number && cleanNum && h.number === cleanNum;
                             let matchNome = h.title && nome && h.title.toLowerCase() === nome.toLowerCase();
                             return matchNum || matchNome;
                         });
-                        if (found) pageNum = found.page;
+                        if (found) {
+                            pageNum = found.page;
+                            cat = found.category;
+                        }
                     }
                     
+                    if(num.includes('(CIAS)')) cat = 'cias';
+                    if(num.includes('(AVULSO)')) cat = 'avulsos';
+                    
                     if (pageNum) {
-                        presentationPages.push({
-                            nome: (num ? num + ' - ' : '') + nome,
-                            page: pageNum
-                        });
+                        let actualPage = pageNum;
+                        let docToUse = cat === 'avulsos' ? pdfDocAvulsos : pdfDoc;
+
+                        // Se um instrumento for escolhido, altera o documento e a pagina correspondente de cada categoria
+                        if (selectedInstrumentPres !== 'padrao') {
+                            let inst = instrumentosExtra.find(i => i.id === selectedInstrumentPres);
+                            if (inst) {
+                                let cleanNum = num ? num.replace('(CIAS)','').replace('(AVULSO)','').trim() : null;
+
+                                if (cat === 'avulsos') {
+                                    docToUse = inst.pdfDocAvulsos || pdfDocAvulsos; 
+                                    let found = inst.mappedAvulsos?.find(ha => (cleanNum && ha.number === cleanNum) || (nome && ha.title.toLowerCase() === nome.toLowerCase()));
+                                    actualPage = found && found.page ? found.page : (inst.mappedAvulsos?.length ? null : pageNum);
+                                } else if (cat === 'cias') {
+                                    docToUse = inst.pdfDoc || pdfDoc;
+                                    let found = inst.mappedCias?.find(hc => (cleanNum && hc.number === cleanNum) || (nome && hc.title.toLowerCase() === nome.toLowerCase()));
+                                    actualPage = found && found.page ? found.page : (inst.mappedCias?.length ? null : pageNum);
+                                } else {
+                                    docToUse = inst.pdfDoc || pdfDoc;
+                                    let found = inst.mappedAdultos?.find(ha => (cleanNum && ha.number === cleanNum) || (nome && ha.title.toLowerCase() === nome.toLowerCase()));
+                                    actualPage = found && found.page ? found.page : (inst.mappedAdultos?.length ? null : pageNum);
+                                }
+                            }
+                        }
+
+                        if(actualPage && docToUse) {
+                            presentationPages.push({
+                                nome: (num ? num + ' - ' : '') + nome,
+                                page: actualPage,
+                                category: cat,
+                                doc: docToUse
+                            });
+                        } else {
+                            presentationPages.push({
+                                nome: (num ? num + ' - ' : '') + nome + " (Página não mapeada)",
+                                page: null,
+                                category: cat,
+                                doc: null
+                            });
+                        }
                     }
                 }
             });
@@ -835,18 +1292,17 @@
             }
         }
 
-        function queueRenderPresPage(num) {
-            if (presPageRendering) { presPageNumPending = num; } 
-            else { executeRenderPresPage(num); }
+        function queueRenderPresPage(num, docToUse) {
+            if (presPageRendering) { presPageNumPending = {num: num, doc: docToUse}; } 
+            else { executeRenderPresPage(num, docToUse); }
         }
 
-        function executeRenderPresPage(num) {
-            if (!pdfDoc) return;
+        function executeRenderPresPage(num, docToUse) {
+            if (!docToUse) return;
             presPageRendering = true;
-            pdfDoc.getPage(num).then(page => {
+            docToUse.getPage(num).then(page => {
                 const viewport = page.getViewport({ scale: presScale });
                 
-                // Aumenta a qualidade visual mantendo o tamanho no CSS
                 const outputScale = 3;
                 canvasPres.width = Math.floor(viewport.width * outputScale);
                 canvasPres.height = Math.floor(viewport.height * outputScale);
@@ -861,7 +1317,7 @@
                     if (presPageNumPending !== null) {
                         let next = presPageNumPending;
                         presPageNumPending = null;
-                        executeRenderPresPage(next);
+                        executeRenderPresPage(next.num, next.doc);
                     }
                 });
             });
@@ -869,16 +1325,19 @@
 
         function renderPresentationPage() {
             if(presentationPages.length === 0) return;
-            if (!pdfDoc) {
-                document.getElementById('pres-hino-nome').textContent = "Aguardando PDF ser carregado...";
-                return;
-            }
-
+            
             let currentItem = presentationPages[currentPresentationIndex];
+            let docToUse = currentItem.doc;
+
             document.getElementById('pres-hino-nome').textContent = currentItem.nome;
             document.getElementById('pres-contador').textContent = (currentPresentationIndex + 1) + " / " + presentationPages.length;
+
+            if (!docToUse || !currentItem.page) {
+                ctxPres.clearRect(0, 0, canvasPres.width, canvasPres.height);
+                return;
+            }
             
-            queueRenderPresPage(currentItem.page);
+            queueRenderPresPage(currentItem.page, docToUse);
             document.getElementById('pdf-container-pres').scrollTop = 0;
         }
 
@@ -916,14 +1375,20 @@
             if (!termo) { listaDiv.style.display = 'none'; return; }
 
             const isCiasSearch = termo.includes("cias");
-            if (isCiasSearch) termo = termo.replace(/cias/g, "").trim();
+            const isAvulsoSearch = termo.includes("avulso");
+            
+            let cleanTermo = termo;
+            if (isCiasSearch) cleanTermo = cleanTermo.replace(/cias/g, "").trim();
+            if (isAvulsoSearch) cleanTermo = cleanTermo.replace(/avulso/g, "").trim();
+            if (isCiasSearch && isAvulsoSearch) cleanTermo = cleanTermo.replace(/(cias|avulso)/g, "").trim();
 
             let filtrados = hymnsData.filter(h => {
                 if (isCiasSearch && h.category !== 'cias') return false;
-                if (isCiasSearch && termo === "") return true;
+                if (isAvulsoSearch && h.category !== 'avulsos') return false;
+                if ((isCiasSearch || isAvulsoSearch) && cleanTermo === "") return true;
 
                 const searchStr = `${h.number || ''} ${h.title || ''}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                return searchStr.includes(termo);
+                return searchStr.includes(cleanTermo);
             }).slice(0, 15);
 
             if (filtrados.length === 0) { listaDiv.style.display = 'none'; return; }
@@ -931,7 +1396,11 @@
             filtrados.forEach(h => {
                 const item = document.createElement('div');
                 item.className = 'sugestao-item';
-                let displayNum = h.category === 'cias' ? (h.number ? `(CIAS) ${h.number}` : '(CIAS)') : (h.number || '');
+                
+                let displayNum = h.number || '';
+                if (h.category === 'cias') displayNum = h.number ? `(CIAS) ${h.number}` : '(CIAS)';
+                if (h.category === 'avulsos') displayNum = h.number ? `(AVULSO) ${h.number}` : '(AVULSO)';
+                
                 let displayText = displayNum ? `${displayNum} - ${h.title}` : h.title;
                 
                 item.textContent = displayText;
@@ -939,7 +1408,8 @@
                     input.value = displayText;
                     input.dataset.num = displayNum;
                     input.dataset.title = h.title;
-                    input.dataset.page = h.page || ''; // Salva a página exata mapeada
+                    input.dataset.page = h.page || ''; 
+                    input.dataset.category = h.category || 'adult'; 
                     listaDiv.style.display = 'none';
                 };
                 listaDiv.appendChild(item);
@@ -956,7 +1426,8 @@
 
             let numero = input.dataset.num || '';
             let nome = input.dataset.title || '';
-            let page = input.dataset.page || ''; // Recupera a página gravada no click da sugestão
+            let page = input.dataset.page || '';
+            let category = input.dataset.category || '';
 
             if (!numero && !nome) {
                 const indexHifen = valor.indexOf(' - ');
@@ -974,7 +1445,8 @@
                 if (celulas[0].textContent.trim() === '' && celulas[1].textContent.trim() === '') {
                     celulas[0].textContent = numero;
                     celulas[1].textContent = nome;
-                    linha.dataset.page = page; // Guarda a página diretamente na linha da tabela
+                    linha.dataset.page = page; 
+                    linha.dataset.category = category;
                     adicionou = true;
                     break;
                 }
@@ -983,13 +1455,16 @@
             if (!adicionou) {
                 alert("A lista está cheia! Limpe-a ou apague um item antes de adicionar outro.");
             } else {
-                input.value = ''; input.dataset.num = ''; input.dataset.title = ''; input.dataset.page = '';
+                input.value = ''; input.dataset.num = ''; input.dataset.title = ''; input.dataset.page = ''; input.dataset.category = '';
             }
         }
 
         function limparListaTabela() {
             document.querySelectorAll('#tabela-corpo td[contenteditable="true"]').forEach(c => c.textContent = '');
-            document.querySelectorAll('#tabela-corpo tr').forEach(l => delete l.dataset.page);
+            document.querySelectorAll('#tabela-corpo tr').forEach(l => {
+                delete l.dataset.page;
+                delete l.dataset.category;
+            });
         }
 
         async function salvarImagem(e) {
