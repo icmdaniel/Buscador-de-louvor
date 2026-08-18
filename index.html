@@ -547,9 +547,9 @@
             const filtered = hymnsData.filter(h => {
                 if (isCiasSearch && h.category !== 'cias') return false;
                 if (isCiasSearch && query === "") return true;
-                return (h.number && h.number.includes(query)) || 
-                       (h.title && h.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(query)) ||
-                       (h.raw && h.raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(query));
+
+                const searchStr = `${h.number || ''} ${h.title || ''} ${h.raw || ''}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                return searchStr.includes(query);
             });
             renderHymnsList(filtered);
         });
@@ -909,15 +909,21 @@
 
         function atualizarSugestoesGerador() {
             const input = document.getElementById('busca-hino-gerador');
-            const termo = input.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+            let termo = input.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
             const listaDiv = document.getElementById('sugestoes-lista');
             listaDiv.innerHTML = '';
 
             if (!termo) { listaDiv.style.display = 'none'; return; }
 
+            const isCiasSearch = termo.includes("cias");
+            if (isCiasSearch) termo = termo.replace(/cias/g, "").trim();
+
             let filtrados = hymnsData.filter(h => {
-                const prefix = h.category === 'cias' ? '(CIAS) ' : '';
-                return `${prefix}${h.number || ''} ${h.title || ''}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(termo);
+                if (isCiasSearch && h.category !== 'cias') return false;
+                if (isCiasSearch && termo === "") return true;
+
+                const searchStr = `${h.number || ''} ${h.title || ''}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                return searchStr.includes(termo);
             }).slice(0, 15);
 
             if (filtrados.length === 0) { listaDiv.style.display = 'none'; return; }
