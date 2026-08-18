@@ -7,10 +7,14 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- PDF.js para leitura e renderização -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
+
+    <!-- html2canvas para exportação do gerador de lista -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
         /* Custom scrollbar para melhor estética */
@@ -19,7 +23,7 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
-        #pdf-container {
+        #pdf-container, #pdf-container-pres {
             background-color: #525659;
             overflow: auto;
             position: relative;
@@ -43,6 +47,86 @@
             #tab-consulta:not(.show-pdf) #pdf-panel { display: none !important; }
             #tab-consulta:not(.show-pdf) #search-panel { display: flex !important; }
         }
+
+        /* ----- ESTILOS DA ABA GERADOR DE LISTA ----- */
+        .sugestao-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            font-size: 15px;
+            border-bottom: 1px solid #eee;
+            color: #333;
+        }
+        .sugestao-item:hover {
+            background-color: #f0f0f0;
+        }
+        
+        #lista-louvores {
+            width: 100%;
+            max-width: 600px;
+            background-color: #fff;
+            border: 2px solid #000;
+            font-family: Arial, sans-serif;
+            margin: 0 auto;
+        }
+        #lista-louvores .header-icm {
+            padding: 15px 20px;
+            border-bottom: 2px solid #000;
+            text-align: center;
+        }
+        #lista-louvores .logo-icm {
+            color: #bd1622;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #lista-louvores .serif {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        #lista-louvores .sub-header {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 20px;
+            font-size: 22px;
+            font-weight: bold;
+            border-bottom: 2px solid #000;
+        }
+        #lista-louvores table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #lista-louvores th, #lista-louvores td {
+            border: 2px solid #000;
+            padding: 12px 10px;
+            font-size: 18px;
+            color: #000;
+        }
+        #lista-louvores th { background-color: #e0e0e0; font-weight: bold; }
+        #lista-louvores th:first-child { width: 80px; text-align: center; }
+        #lista-louvores th:nth-child(2) { text-align: center; }
+        #lista-louvores td:first-child { text-align: center; }
+        #lista-louvores td:nth-child(2) { text-align: left; padding-left: 15px; }
+
+        #lista-louvores td[contenteditable="true"] {
+            outline: none;
+            cursor: text;
+            text-transform: uppercase;
+        }
+        #lista-louvores td[contenteditable="true"]:empty:before {
+            content: "\feff";
+            display: block;
+        }
+        #lista-louvores td[contenteditable="true"]:hover {
+            background-color: #f9f9f9;
+        }
+
+        @media (max-width: 600px) {
+            #lista-louvores .sub-header { font-size: 18px; padding: 8px 12px; }
+            #lista-louvores th, #lista-louvores td { padding: 10px 6px; font-size: 16px; }
+        }
     </style>
 </head>
 <body class="bg-gray-100 h-screen flex flex-col font-sans overflow-hidden">
@@ -54,16 +138,104 @@
         </div>
     </header>
 
-    <div class="bg-white border-b border-gray-200 shrink-0">
-        <nav class="flex gap-4 px-6 pt-2">
-            <button onclick="switchTab('tab-consulta')" id="btn-tab-consulta" class="pb-2 px-2 border-b-4 font-semibold transition border-blue-600 text-blue-700">Consulta e Visualizador de PDF</button>
-            <button onclick="switchTab('tab-indice')" id="btn-tab-indice" class="pb-2 px-2 border-b-4 font-semibold transition border-transparent text-gray-500 hover:text-gray-700">Relação e Índice de Louvores</button>
+    <div class="bg-white border-b border-gray-200 shrink-0 overflow-x-auto">
+        <nav class="flex gap-4 px-6 pt-2 w-max min-w-full">
+            <button onclick="switchTab('tab-gerador')" id="btn-tab-gerador" class="pb-2 px-2 border-b-4 font-semibold transition border-blue-600 text-blue-700 whitespace-nowrap">Gerador de Lista</button>
+            <button onclick="switchTab('tab-apresentacao')" id="btn-tab-apresentacao" class="pb-2 px-2 border-b-4 font-semibold transition border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap">Apresentação da Lista</button>
+            <button onclick="switchTab('tab-consulta')" id="btn-tab-consulta" class="pb-2 px-2 border-b-4 font-semibold transition border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap">Consulta e Visualizador</button>
+            <button onclick="switchTab('tab-indice')" id="btn-tab-indice" class="pb-2 px-2 border-b-4 font-semibold transition border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap">Relação e Índice</button>
         </nav>
     </div>
 
     <main class="flex-grow flex overflow-hidden relative">
 
-        <section id="tab-consulta" class="w-full h-full flex flex-col md:flex-row absolute inset-0">
+        <!-- ABA 1 PRINCIPAL: GERADOR DE LISTAS -->
+        <section id="tab-gerador" class="w-full h-full bg-gray-50 p-6 absolute inset-0 overflow-y-auto">
+            <div class="max-w-4xl mx-auto flex flex-col items-center">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 font-sans w-full max-w-[600px] text-left">Gerador de Lista de Louvores</h2>
+
+                <div class="w-full max-w-[600px] mb-4">
+                    <input type="text" id="nome-igreja-input" placeholder="Nome da igreja / localidade (Opcional, ex: Centro)" autocomplete="off" class="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 uppercase">
+                </div>
+
+                <div class="search-container relative flex gap-2 w-full max-w-[600px] mb-6">
+                    <input type="text" id="busca-hino-gerador" placeholder="Pesquisar número ou nome do louvor..." autocomplete="off" class="flex-1 p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 uppercase">
+                    <div id="sugestoes-lista" class="absolute top-full left-0 right-[130px] bg-white border-2 border-gray-300 border-t-0 rounded-b-lg shadow-lg z-50 hidden max-h-52 overflow-y-auto"></div>
+                    <button onclick="adicionarHinoTabela()" class="bg-[#2980b9] hover:opacity-90 text-white px-5 py-3 rounded-lg font-bold shadow transition transform active:scale-95 whitespace-nowrap">➕ Adicionar</button>
+                </div>
+
+                <div class="flex gap-3 mb-8 w-full max-w-[600px] justify-center flex-wrap">
+                    <button onclick="salvarImagem(event)" class="bg-[#27ae60] hover:opacity-90 text-white px-5 py-3 rounded-lg font-bold shadow transition transform active:scale-95">💾 Salvar Imagem</button>
+                    <button onclick="exportarECompartilhar(event)" class="bg-blue-600 hover:opacity-90 text-white px-5 py-3 rounded-lg font-bold shadow transition transform active:scale-95">📲 Compartilhar</button>
+                    <button onclick="limparListaTabela()" class="bg-gray-600 hover:opacity-90 text-white px-5 py-3 rounded-lg font-bold shadow transition transform active:scale-95">🧹 Limpar</button>
+                </div>
+
+                <div class="capture-wrapper bg-white p-4 rounded-xl shadow-lg w-full max-w-[640px] overflow-x-auto">
+                    <div id="lista-louvores">
+                        <div class="header-icm">
+                            <div class="logo-icm">
+                                <span class="serif">IGREJA CRISTÃ MARANATA<span id="sub-igreja-display"></span></span>
+                            </div>
+                        </div>
+                        
+                        <div class="sub-header">
+                            <span>LOUVORES</span>
+                            <span><span id="data-atual" class="data-text"></span></span>
+                        </div>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>N°</th>
+                                    <th>Nome do Hino</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-corpo">
+                                <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+                                <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+                                <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+                                <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+                                <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+                                <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+                                <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+                                <tr><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABA 2 NOVA: APRESENTAÇÃO DA LISTA (Sem buscador, exibe na ordem da tabela) -->
+        <section id="tab-apresentacao" class="w-full h-full flex flex-col absolute inset-0 hidden bg-gray-200">
+            <div class="bg-gray-800 text-white p-2 flex flex-wrap justify-center items-center gap-2 md:gap-4 shadow-md z-10 shrink-0 text-sm">
+                <button id="pres-prev" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg> Anterior
+                </button>
+                
+                <div class="flex flex-col items-center mx-2 text-center">
+                    <span class="font-bold truncate max-w-[200px] md:max-w-[400px] text-blue-300" id="pres-hino-nome">Nenhum louvor mapeado</span>
+                    <span id="pres-contador" class="text-gray-400 text-xs">0 / 0</span>
+                </div>
+                
+                <button id="pres-next" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded flex items-center">
+                    Próximo <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+                
+                <div class="hidden md:block border-l border-gray-600 h-6 mx-2"></div>
+                
+                <button id="pres-zoom-out" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">- Zoom</button>
+                <span id="pres-zoom-val">100%</span>
+                <button id="pres-zoom-in" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">+ Zoom</button>
+            </div>
+            
+            <div id="pdf-container-pres" class="flex-grow w-full h-full">
+                <canvas id="pdf-canvas-pres"></canvas>
+            </div>
+        </section>
+
+        <!-- ABA 3: CONSULTA E VISUALIZADOR DE PDF -->
+        <section id="tab-consulta" class="w-full h-full flex flex-col md:flex-row absolute inset-0 hidden">
             
             <div id="search-panel" class="w-full md:w-1/3 lg:w-1/4 bg-white shadow-[2px_0_5px_rgba(0,0,0,0.05)] flex flex-col h-full z-10">
                 <div class="p-4 border-b border-gray-200 bg-gray-50">
@@ -76,7 +248,6 @@
                 </div>
             </div>
 
-            <!-- ADICIONADO "relative" AQUI PARA O BOTÃO FLUTUANTE FUNCIONAR -->
             <div id="pdf-panel" class="w-full md:w-2/3 lg:w-3/4 flex flex-col h-full bg-gray-200 relative">
                 <div class="bg-gray-800 text-white p-2 flex flex-wrap justify-center items-center gap-2 md:gap-4 shadow-md z-10 shrink-0 text-sm">
                     <button id="prev-page" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">Anterior</button>
@@ -86,8 +257,7 @@
                     <div class="hidden md:block border-l border-gray-600 h-6 mx-2"></div>
                     
                     <button id="zoom-out" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">- Zoom</button>
-                    <!-- Trocado 100% para 70% como padrão no HTML -->
-                    <span id="zoom-val">70%</span>
+                    <span id="zoom-val">100%</span>
                     <button id="zoom-in" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">+ Zoom</button>
                 </div>
                 
@@ -95,19 +265,17 @@
                     <canvas id="pdf-canvas"></canvas>
                 </div>
 
-                <!-- BOTÃO FLUTUANTE DE PESQUISA NO CANTO (SÓ APARECE NO CELULAR) -->
                 <button onclick="document.getElementById('tab-consulta').classList.remove('show-pdf')" class="md:hidden absolute bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.6)] flex justify-center items-center z-50 transition" title="Pesquisar outro louvor">
-                    <!-- Ícone de Lupa -->
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 </button>
             </div>
         </section>
 
+        <!-- ABA 4: ÍNDICE -->
         <section id="tab-indice" class="w-full h-full bg-gray-50 p-6 absolute inset-0 hidden overflow-y-auto">
             <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md border border-gray-200">
                 <h2 class="text-xl font-bold text-gray-800 mb-2">Mapeamento Automático de Hinos</h2>
                 
-                <!-- ÁREA DE CARREGAMENTO VIA LINK DO GITHUB -->
                 <div class="mb-6 bg-gray-100 p-4 rounded-lg border border-gray-300 flex flex-col items-start gap-3">
                     <div class="w-full">
                         <label class="block text-sm font-bold text-gray-700 mb-1">1º Passo: Link do PDF no GitHub</label>
@@ -127,7 +295,6 @@
                     Cole abaixo a sua relação de hinos (um por linha). O sistema vai cruzar esta lista com o texto original do PDF e encontrar a página exata automaticamente!
                 </p>
 
-                <!-- LOUVORES ADULTOS -->
                 <div class="mt-6 mb-2 border-b border-gray-200 pb-2">
                     <h3 class="text-lg font-bold text-gray-700">1. Louvores Adultos</h3>
                 </div>
@@ -143,9 +310,10 @@
                     </div>
                     <span class="text-xs text-gray-500">(Deixe em branco para varrer até o fim)</span>
                 </div>
-                <textarea id="hymn-list-input" rows="8" class="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm mb-6" placeholder="1 - O SANGUE DE JESUS TEM PODER&#10;2 - O SANGUE DE JESUS TEM PODER PARA SALVAR&#10;3 - CLAMO A TI..."></textarea>
+                <textarea id="hymn-list-input" rows="8" class="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm mb-6" placeholder="1 - O SANGUE DE JESUS TEM PODER
+2 - O SANGUE DE JESUS TEM PODER PARA SALVAR
+3 - CLAMO A TI..."></textarea>
                 
-                <!-- LOUVORES CIAS -->
                 <div class="mt-2 mb-2 border-b border-gray-200 pb-2">
                     <h3 class="text-lg font-bold text-gray-700">2. Louvores das Crianças (CIAS)</h3>
                 </div>
@@ -161,7 +329,8 @@
                     </div>
                     <span class="text-xs text-gray-500">(Deixe em branco para varrer até o fim)</span>
                 </div>
-                <textarea id="cias-hymn-list-input" rows="8" class="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm mb-6" placeholder="(CIAS) 01 - O sangue de Jesus tem poder&#10;(CIAS) 02 - Pai, estou a te clamar..."></textarea>
+                <textarea id="cias-hymn-list-input" rows="8" class="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm mb-6" placeholder="(CIAS) 01 - O sangue de Jesus tem poder
+(CIAS) 02 - Pai, estou a te clamar..."></textarea>
 
                 <div class="flex items-center gap-4">
                     <button id="btn-process" onclick="processAndMapHymns()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow transition flex items-center gap-2">
@@ -210,10 +379,18 @@
         let pageNum = 1;
         let pageRendering = false;
         let pageNumPending = null;
-        // Alterado para 0.7 para começar com o zoom em 70% por padrão
-        let scale = 0.7; 
+        let scale = 1.5;
         let canvas = document.getElementById('pdf-canvas');
         let ctx = canvas.getContext('2d');
+
+        // Variáveis da Aba de Apresentação
+        let presScale = 1.5;
+        let canvasPres = document.getElementById('pdf-canvas-pres');
+        let ctxPres = canvasPres.getContext('2d');
+        let presPageRendering = false;
+        let presPageNumPending = null;
+        let presentationPages = [];
+        let currentPresentationIndex = 0;
         
         let hymnsData = JSON.parse(localStorage.getItem('icm_hymns_data')) || [];
 
@@ -221,21 +398,31 @@
         function switchTab(tabId) {
             document.getElementById('tab-consulta').classList.add('hidden');
             document.getElementById('tab-indice').classList.add('hidden');
+            document.getElementById('tab-gerador').classList.add('hidden');
+            document.getElementById('tab-apresentacao').classList.add('hidden');
             document.getElementById(tabId).classList.remove('hidden');
 
-            const btnCons = document.getElementById('btn-tab-consulta');
-            const btnInd = document.getElementById('btn-tab-indice');
+            const tabs = [
+                {id: 'tab-gerador', btnId: 'btn-tab-gerador'},
+                {id: 'tab-apresentacao', btnId: 'btn-tab-apresentacao'},
+                {id: 'tab-consulta', btnId: 'btn-tab-consulta'},
+                {id: 'tab-indice', btnId: 'btn-tab-indice'}
+            ];
 
-            if (tabId === 'tab-consulta') {
-                btnCons.classList.replace('border-transparent', 'border-blue-600');
-                btnCons.classList.replace('text-gray-500', 'text-blue-700');
-                btnInd.classList.replace('border-blue-600', 'border-transparent');
-                btnInd.classList.replace('text-blue-700', 'text-gray-500');
-            } else {
-                btnInd.classList.replace('border-transparent', 'border-blue-600');
-                btnInd.classList.replace('text-gray-500', 'text-blue-700');
-                btnCons.classList.replace('border-blue-600', 'border-transparent');
-                btnCons.classList.replace('text-blue-700', 'text-gray-500');
+            tabs.forEach(t => {
+                const btn = document.getElementById(t.btnId);
+                if (t.id === tabId) {
+                    btn.classList.replace('border-transparent', 'border-blue-600');
+                    btn.classList.replace('text-gray-500', 'text-blue-700');
+                } else {
+                    btn.classList.replace('border-blue-600', 'border-transparent');
+                    btn.classList.replace('text-blue-700', 'text-gray-500');
+                }
+            });
+
+            // Se mudou para a aba de apresentação, atualiza a lista e renderiza
+            if(tabId === 'tab-apresentacao') {
+                carregarListaApresentacao();
             }
         }
 
@@ -248,7 +435,7 @@
             }
         }
 
-        /* --- INICIALIZAÇÃO, EVENTOS E CARREGAMENTO DO FIREBASE --- */
+        /* --- INICIALIZAÇÃO E FIREBASE --- */
         window.addEventListener('firebase-ready', async () => {
             try {
                 const docRef = window.fbDoc(window.db, "configuracoes", "geral");
@@ -279,23 +466,17 @@
                             document.getElementById('page-count').textContent = pdfDoc.numPages;
                             document.getElementById('end-page').placeholder = pdfDoc.numPages;
                             document.getElementById('cias-end-page').placeholder = pdfDoc.numPages;
-                            renderPage(1);
+                            renderPage(1); // Renderiza na aba de consulta para cache
                             document.getElementById('upload-status').textContent = "Pronto para o uso";
                             document.getElementById('upload-status').className = "text-sm font-semibold text-green-600";
                         } catch (err) {
-                            console.error("Erro ao carregar PDF do Firebase:", err);
-                            document.getElementById('upload-status').textContent = "Erro ao carregar PDF. Verifique se o link ainda é público.";
+                            console.error("Erro ao carregar PDF:", err);
+                            document.getElementById('upload-status').textContent = "Erro ao carregar PDF. Verifique o link.";
                             document.getElementById('upload-status').className = "text-sm font-semibold text-red-600";
                         }
                     }
                 } else {
                     renderHymnsList(hymnsData);
-                    if (hymnsData.length > 0) {
-                        const adultHymns = hymnsData.filter(h => h.category !== 'cias').map(h => h.raw).join('\n');
-                        const ciasHymns = hymnsData.filter(h => h.category === 'cias').map(h => h.raw).join('\n');
-                        if (adultHymns) document.getElementById('hymn-list-input').value = adultHymns;
-                        if (ciasHymns) document.getElementById('cias-hymn-list-input').value = ciasHymns;
-                    }
                 }
             } catch (error) {
                 console.error("Erro na comunicação inicial com Firebase", error);
@@ -325,16 +506,16 @@
                 await window.fbSetDoc(docRef, { pdfUrl: linkInput }, { merge: true });
 
                 statusEl.className = "text-sm font-semibold text-green-600";
-                statusEl.textContent = "PDF carregado e link salvo na nuvem com sucesso!";
+                statusEl.textContent = "PDF carregado e salvo na nuvem com sucesso!";
             } catch (error) {
-                console.error("Erro ao fazer leitura do PDF no GitHub", error);
+                console.error("Erro ao carregar PDF", error);
                 statusEl.className = "text-sm font-semibold text-red-600";
                 statusEl.textContent = "Erro de leitura. Verifique se o link Raw está correto.";
-                alert("Não foi possível carregar o PDF. Certifique-se de que o link fornecido é o link direto (Raw) do GitHub.");
+                alert("Não foi possível carregar o PDF.");
             }
         });
 
-        // Controles de Navegação do PDF
+        // Controles de Navegação da Aba de Consulta
         document.getElementById('prev-page').addEventListener('click', onPrevPage);
         document.getElementById('next-page').addEventListener('click', onNextPage);
         document.getElementById('zoom-in').addEventListener('click', () => { scale += 0.2; updateZoom(); renderPage(pageNum); });
@@ -342,20 +523,12 @@
 
         document.getElementById('search-input').addEventListener('input', function(e) {
             let query = e.target.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            
             const isCiasSearch = query.includes("cias");
-            
-            if (isCiasSearch) {
-                query = query.replace(/cias/g, "").trim();
-            }
+            if (isCiasSearch) query = query.replace(/cias/g, "").trim();
 
             const filtered = hymnsData.filter(h => {
-                if (isCiasSearch && h.category !== 'cias') {
-                    return false;
-                }
-                if (isCiasSearch && query === "") {
-                    return true;
-                }
+                if (isCiasSearch && h.category !== 'cias') return false;
+                if (isCiasSearch && query === "") return true;
                 return (h.number && h.number.includes(query)) || 
                        (h.title && h.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(query)) ||
                        (h.raw && h.raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(query));
@@ -363,40 +536,17 @@
             renderHymnsList(filtered);
         });
 
-        /* --- PDF.JS RENDERIZAÇÃO --- */
+        /* --- PDF.JS RENDERIZAÇÃO (CONSULTA) --- */
         function renderPage(num) {
             if (!pdfDoc) return;
             pageRendering = true;
             pdfDoc.getPage(num).then(page => {
                 const viewport = page.getViewport({ scale: scale });
-                
-                // --- INÍCIO DA ALTERAÇÃO: CORREÇÃO DE QUALIDADE PARA TELAS DE ALTA DENSIDADE ---
-                // Verifica a densidade de pixels da tela do usuário (celulares geralmente são 2 ou 3)
-                const outputScale = window.devicePixelRatio || 1;
-                
-                // O canvas é renderizado em alta qualidade multiplicando pelo outputScale
-                canvas.width = Math.floor(viewport.width * outputScale);
-                canvas.height = Math.floor(viewport.height * outputScale);
-                
-                // Mas o tamanho visual via CSS continua sendo o tamanho original reduzido do PDF (que é os 70%)
-                canvas.style.width = Math.floor(viewport.width) + "px";
-                canvas.style.height = Math.floor(viewport.height) + "px";
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
 
-                // Passa o transform para o pdf.js saber que o canvas interno é maior
-                const transform = outputScale !== 1 
-                    ? [outputScale, 0, 0, outputScale, 0, 0] 
-                    : null;
-
-                const renderContext = {
-                    canvasContext: ctx,
-                    transform: transform,
-                    viewport: viewport
-                };
-                // --- FIM DA ALTERAÇÃO ---
-
-                const renderTask = page.render(renderContext);
-
-                renderTask.promise.then(() => {
+                const renderContext = { canvasContext: ctx, viewport: viewport };
+                page.render(renderContext).promise.then(() => {
                     pageRendering = false;
                     if (pageNumPending !== null) {
                         renderPage(pageNumPending);
@@ -405,32 +555,17 @@
                 });
             });
             document.getElementById('page-num').textContent = num;
-            updateZoom(); // Garante que a porcentagem será atualizada na barra de navegação
         }
 
         function queueRenderPage(num) {
-            if (pageRendering) { pageNumPending = num; } 
-            else { renderPage(num); }
+            if (pageRendering) { pageNumPending = num; } else { renderPage(num); }
         }
+        function onPrevPage() { if (pageNum > 1) { pageNum--; queueRenderPage(pageNum); } }
+        function onNextPage() { if (pageNum < pdfDoc.numPages) { pageNum++; queueRenderPage(pageNum); } }
+        function updateZoom() { document.getElementById('zoom-val').textContent = Math.round(scale * 100) + '%'; }
 
-        function onPrevPage() {
-            if (pageNum <= 1) return;
-            pageNum--;
-            queueRenderPage(pageNum);
-        }
-
-        function onNextPage() {
-            if (pageNum >= pdfDoc.numPages) return;
-            pageNum++;
-            queueRenderPage(pageNum);
-        }
-
-        function updateZoom() {
-            document.getElementById('zoom-val').textContent = Math.round(scale * 100) + '%';
-        }
 
         /* --- LÓGICA DE MAPEAMENTO ROBUSTA --- */
-        
         function normalizeStr(str) {
             if(!str) return "";
             return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '');
@@ -442,36 +577,19 @@
         }
 
         async function processAndMapHymns() {
-            if (!pdfDoc) {
-                alert("Por favor, carregue o PDF primeiro no botão da aba Relação e Índice!");
-                return;
-            }
+            if (!pdfDoc) { alert("Carregue o PDF primeiro!"); return; }
 
             const rawText = document.getElementById('hymn-list-input').value;
             const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            
             const ciasRawText = document.getElementById('cias-hymn-list-input').value;
             const ciasLines = ciasRawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
-            if (lines.length === 0 && ciasLines.length === 0) {
-                alert("As listas de hinos estão vazias!");
-                return;
-            }
+            if (lines.length === 0 && ciasLines.length === 0) return;
 
-            let startPageInput = parseInt(document.getElementById('start-page').value);
-            let endPageInput = parseInt(document.getElementById('end-page').value);
-            let startPage = isNaN(startPageInput) || startPageInput < 1 ? 1 : startPageInput;
-            let endPage = isNaN(endPageInput) || endPageInput > pdfDoc.numPages ? pdfDoc.numPages : endPageInput;
-
-            let ciasStartPageInput = parseInt(document.getElementById('cias-start-page').value);
-            let ciasEndPageInput = parseInt(document.getElementById('cias-end-page').value);
-            let ciasStartPage = isNaN(ciasStartPageInput) || ciasStartPageInput < 1 ? 1 : ciasStartPageInput;
-            let ciasEndPage = isNaN(ciasEndPageInput) || ciasEndPageInput > pdfDoc.numPages ? pdfDoc.numPages : ciasEndPageInput;
-
-            if (startPage > endPage || ciasStartPage > ciasEndPage) {
-                alert("A página inicial não pode ser maior que a página final em nenhuma das categorias!");
-                return;
-            }
+            let startPage = parseInt(document.getElementById('start-page').value) || 1;
+            let endPage = parseInt(document.getElementById('end-page').value) || pdfDoc.numPages;
+            let ciasStartPage = parseInt(document.getElementById('cias-start-page').value) || 1;
+            let ciasEndPage = parseInt(document.getElementById('cias-end-page').value) || pdfDoc.numPages;
 
             const statusEl = document.getElementById('mapping-status');
             const btnEl = document.getElementById('btn-process');
@@ -487,10 +605,9 @@
                 const page = await pdfDoc.getPage(i);
                 const textContent = await page.getTextContent();
                 const rawItems = textContent.items.map(item => item.str);
-                const rawPageText = rawItems.join(' ');
                 pagesContent.push({
                     pageNum: i,
-                    textNormalized: normalizeStr(rawPageText),
+                    textNormalized: normalizeStr(rawItems.join(' ')),
                     rawItems: rawItems
                 });
             }
@@ -501,18 +618,12 @@
 
                 for (const line of targetLines) {
                     const match = line.match(/^[^\d]*(\d+)\s*[-.]\s*(.*)$/);
-                    let num = null;
-                    let title = line;
-
-                    if (match) {
-                        num = match[1];
-                        title = match[2];
-                    }
+                    let num = match ? match[1] : null;
+                    let title = match ? match[2] : line;
 
                     const normTitle = normalizeStr(title);
                     const normNum = num ? normalizeStr(num) : null;
                     const keywords = getKeywords(title);
-
                     let foundPage = null;
 
                     if (normNum && normTitle) {
@@ -535,75 +646,30 @@
                             }
                         }
                     }
-                    if (!foundPage && keywords.length >= 2) {
-                        const firstWordsTarget = normalizeStr(keywords.slice(0, 3).join(''));
-                        if (firstWordsTarget.length >= 4) {
-                            for (const p of filteredPages) {
-                                if (p.textNormalized.includes(firstWordsTarget)) { foundPage = p.pageNum; break; }
-                            }
-                        }
-                    }
-                    if (!foundPage && keywords.length >= 2) {
-                        for (const p of filteredPages) {
-                            const matchedWords = keywords.filter(kw => p.textNormalized.includes(kw));
-                            if (matchedWords.length === keywords.length) { foundPage = p.pageNum; break; }
-                        }
-                    }
 
-                    mappedHymns.push({
-                        raw: line,
-                        number: num,
-                        title: title,
-                        page: foundPage,
-                        category: categoryName
-                    });
+                    mappedHymns.push({ raw: line, number: num, title: title, page: foundPage, category: categoryName });
                 }
 
                 for (let i = 0; i < mappedHymns.length; i++) {
                     let h = mappedHymns[i];
-                    
                     if (h.page === null) {
-                        let prevPage = null;
-                        for (let j = i - 1; j >= 0; j--) {
-                            if (mappedHymns[j].page !== null) { prevPage = mappedHymns[j].page; break; }
-                        }
-                        let nextPage = null;
-                        for (let j = i + 1; j < mappedHymns.length; j++) {
-                            if (mappedHymns[j].page !== null) { nextPage = mappedHymns[j].page; break; }
-                        }
-
-                        if (!prevPage) prevPage = pStart;
-                        if (!nextPage) nextPage = pEnd;
+                        let prevPage = pStart;
+                        for (let j = i - 1; j >= 0; j--) { if (mappedHymns[j].page !== null) { prevPage = mappedHymns[j].page; break; } }
+                        let nextPage = pEnd;
+                        for (let j = i + 1; j < mappedHymns.length; j++) { if (mappedHymns[j].page !== null) { nextPage = mappedHymns[j].page; break; } }
                         
-                        let iStart = Math.min(prevPage, nextPage);
-                        let iEnd = Math.max(prevPage, nextPage);
-
                         let foundByNumberOnly = null;
-
                         if (h.number) {
-                            for (let p = iStart; p <= iEnd; p++) {
+                            for (let p = Math.min(prevPage, nextPage); p <= Math.max(prevPage, nextPage); p++) {
                                 let pageData = filteredPages.find(pc => pc.pageNum === p);
-                                if (pageData) {
-                                    let hasExactNumber = pageData.rawItems.some(item => {
-                                        let trimItem = item.trim();
-                                        return trimItem === h.number || trimItem.startsWith(h.number + " ") || trimItem.startsWith(h.number + "-");
-                                    });
-                                    if (hasExactNumber) {
-                                        foundByNumberOnly = p;
-                                        break;
-                                    }
+                                if (pageData && pageData.rawItems.some(item => item.trim() === h.number || item.trim().startsWith(h.number + " "))) {
+                                    foundByNumberOnly = p; break;
                                 }
                             }
                         }
-
-                        if (foundByNumberOnly) {
-                            h.page = foundByNumberOnly;
-                        } else {
-                            h.page = prevPage;
-                        }
+                        h.page = foundByNumberOnly || prevPage;
                     }
                 }
-                
                 return mappedHymns;
             }
 
@@ -611,16 +677,10 @@
             const mappedCias = processCategory(ciasLines, ciasStartPage, ciasEndPage, 'cias');
 
             hymnsData = [...mappedAdults, ...mappedCias];
-            
-            let foundCount = hymnsData.filter(h => h.page !== null).length;
-            let totalLines = lines.length + ciasLines.length;
-
             localStorage.setItem('icm_hymns_data', JSON.stringify(hymnsData));
             renderHymnsList(hymnsData);
 
             try {
-                statusEl.textContent = `Mapeamento concluído! Salvando configurações na nuvem...`;
-                
                 const configData = {
                     startPage: document.getElementById('start-page').value,
                     endPage: document.getElementById('end-page').value,
@@ -630,30 +690,23 @@
                     ciasHymnList: document.getElementById('cias-hymn-list-input').value,
                     hymnsData: hymnsData
                 };
-
                 const docRef = window.fbDoc(window.db, "configuracoes", "geral");
                 await window.fbSetDoc(docRef, configData, { merge: true });
-
                 statusEl.className = "text-sm font-semibold text-green-600";
-                statusEl.textContent = `Tudo salvo! ${foundCount} de ${totalLines} hinos estruturados.`;
+                statusEl.textContent = `Tudo salvo na nuvem com sucesso!`;
             } catch (error) {
-                console.error("Erro ao salvar informações", error);
                 statusEl.className = "text-sm font-semibold text-yellow-600";
-                statusEl.textContent = `Mapeamento feito, mas houve erro ao salvar na nuvem.`;
+                statusEl.textContent = `Mapeado, mas erro ao salvar na nuvem.`;
             }
             
             btnEl.disabled = false;
-            setTimeout(() => {
-                switchTab('tab-consulta');
-                statusEl.textContent = '';
-            }, 2500);
+            setTimeout(() => { switchTab('tab-consulta'); statusEl.textContent = ''; }, 2500);
         }
 
-        /* --- ATUALIZAÇÃO DA LISTA NA TELA --- */
         function renderHymnsList(list) {
             const container = document.getElementById('hymn-results');
+            if(!container) return;
             container.innerHTML = '';
-
             if (list.length === 0) {
                 container.innerHTML = `<div class="p-4 text-gray-500 text-sm">Nenhum hino encontrado.</div>`;
                 return;
@@ -662,38 +715,277 @@
             list.forEach(hymn => {
                 const div = document.createElement('div');
                 div.className = "p-3 border-b border-gray-100 hover:bg-blue-50 cursor-pointer transition flex items-center justify-between group";
-                
-                const titleStyle = "text-gray-700";
-                const prefix = hymn.category === 'cias' ? `<span class="text-purple-600 font-bold text-xs mr-1" title="Louvor de Criança">(CIAS)</span>` : '';
-
-                const label = hymn.number 
-                    ? `${prefix}<span class="font-bold text-blue-800 w-8 inline-block">${hymn.number}</span> <span class="${titleStyle}">${hymn.title}</span>` 
-                    : `${prefix}<span class="${titleStyle}">${hymn.title}</span>`;
-                
-                const pageBadge = hymn.page 
-                    ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full border border-blue-200 group-hover:bg-blue-600 group-hover:text-white transition">Pág ${hymn.page}</span>` 
-                    : `<span class="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full" title="Não encontrado no PDF">N/A</span>`;
+                const prefix = hymn.category === 'cias' ? `<span class="text-purple-600 font-bold text-xs mr-1">(CIAS)</span>` : '';
+                const label = hymn.number ? `${prefix}<span class="font-bold text-blue-800 w-8 inline-block">${hymn.number}</span> <span class="text-gray-700">${hymn.title}</span>` : `${prefix}<span class="text-gray-700">${hymn.title}</span>`;
+                const pageBadge = hymn.page ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full border border-blue-200">Pág ${hymn.page}</span>` : `<span class="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full">N/A</span>`;
 
                 div.innerHTML = `<div class="truncate text-sm flex-1 pr-2">${label}</div><div>${pageBadge}</div>`;
-                
                 div.onclick = () => {
                     if (hymn.page && pdfDoc) {
                         pageNum = hymn.page;
                         queueRenderPage(pageNum);
                         document.getElementById('pdf-container').scrollTop = 0;
-                        
-                        // ATIVA MODO TELA CHEIA DO PDF NO CELULAR
                         document.getElementById('tab-consulta').classList.add('show-pdf');
-                        
                     } else if (!pdfDoc) {
-                        alert("Aguarde o carregamento do PDF ou insira-o na aba Relação e Índice!");
-                    } else {
-                        alert("Página deste hino não foi mapeada.");
+                        alert("Aguarde o carregamento do PDF!");
                     }
                 };
-                
                 container.appendChild(div);
             });
+        }
+
+
+        /* ==============================================================
+           LÓGICA DA APRESENTAÇÃO DA LISTA (ABA 2)
+           ============================================================== */
+
+        // Controles da apresentação
+        document.getElementById('pres-prev').addEventListener('click', () => {
+            if (currentPresentationIndex > 0) {
+                currentPresentationIndex--;
+                renderPresentationPage();
+            }
+        });
+        document.getElementById('pres-next').addEventListener('click', () => {
+            if (currentPresentationIndex < presentationPages.length - 1) {
+                currentPresentationIndex++;
+                renderPresentationPage();
+            }
+        });
+        document.getElementById('pres-zoom-in').addEventListener('click', () => { presScale += 0.2; updatePresZoom(); renderPresentationPage(); });
+        document.getElementById('pres-zoom-out').addEventListener('click', () => { if(presScale > 0.6) { presScale -= 0.2; updatePresZoom(); renderPresentationPage(); } });
+
+        function updatePresZoom() {
+            document.getElementById('pres-zoom-val').textContent = Math.round(presScale * 100) + '%';
+        }
+
+        // Lê a tabela do Gerador e cria o Array de Apresentação
+        function carregarListaApresentacao() {
+            presentationPages = [];
+            currentPresentationIndex = 0;
+            const linhas = document.querySelectorAll('#tabela-corpo tr');
+            
+            linhas.forEach(linha => {
+                const tds = linha.querySelectorAll('td');
+                const num = tds[0].textContent.trim();
+                const nome = tds[1].textContent.trim();
+                const pageAttr = linha.dataset.page; // Obtém a página salva no momento do clique
+                
+                if (num || nome) {
+                    let pageNum = pageAttr ? parseInt(pageAttr) : null;
+                    
+                    // Fallback: se o usuário digitou na mão, tenta buscar em hymnsData
+                    if (!pageNum && hymnsData.length > 0) {
+                        let found = hymnsData.find(h => {
+                            let cleanNum = num ? num.replace('(CIAS)','').trim() : null;
+                            let matchNum = h.number && cleanNum && h.number === cleanNum;
+                            let matchNome = h.title && nome && h.title.toLowerCase() === nome.toLowerCase();
+                            return matchNum || matchNome;
+                        });
+                        if (found) pageNum = found.page;
+                    }
+                    
+                    if (pageNum) {
+                        presentationPages.push({
+                            nome: (num ? num + ' - ' : '') + nome,
+                            page: pageNum
+                        });
+                    }
+                }
+            });
+
+            if (presentationPages.length > 0) {
+                renderPresentationPage();
+            } else {
+                ctxPres.clearRect(0, 0, canvasPres.width, canvasPres.height);
+                document.getElementById('pres-hino-nome').textContent = "Nenhum louvor mapeado na lista";
+                document.getElementById('pres-contador').textContent = "0 / 0";
+            }
+        }
+
+        function queueRenderPresPage(num) {
+            if (presPageRendering) { presPageNumPending = num; } 
+            else { executeRenderPresPage(num); }
+        }
+
+        function executeRenderPresPage(num) {
+            if (!pdfDoc) return;
+            presPageRendering = true;
+            pdfDoc.getPage(num).then(page => {
+                const viewport = page.getViewport({ scale: presScale });
+                canvasPres.height = viewport.height;
+                canvasPres.width = viewport.width;
+
+                const renderContext = { canvasContext: ctxPres, viewport: viewport };
+                page.render(renderContext).promise.then(() => {
+                    presPageRendering = false;
+                    if (presPageNumPending !== null) {
+                        let next = presPageNumPending;
+                        presPageNumPending = null;
+                        executeRenderPresPage(next);
+                    }
+                });
+            });
+        }
+
+        function renderPresentationPage() {
+            if(presentationPages.length === 0) return;
+            if (!pdfDoc) {
+                document.getElementById('pres-hino-nome').textContent = "Aguardando PDF ser carregado...";
+                return;
+            }
+
+            let currentItem = presentationPages[currentPresentationIndex];
+            document.getElementById('pres-hino-nome').textContent = currentItem.nome;
+            document.getElementById('pres-contador').textContent = (currentPresentationIndex + 1) + " / " + presentationPages.length;
+            
+            queueRenderPresPage(currentItem.page);
+            document.getElementById('pdf-container-pres').scrollTop = 0;
+        }
+
+
+        /* ==============================================================
+           LÓGICA DO GERADOR DE LISTA DE LOUVORES
+           ============================================================== */
+        document.addEventListener("DOMContentLoaded", () => {
+            const dataSpan = document.getElementById('data-atual');
+            if(dataSpan) {
+                const diasSemana = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+                const hoje = new Date();
+                dataSpan.textContent = `${diasSemana[hoje.getDay()].toUpperCase()} - ${String(hoje.getDate()).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${hoje.getFullYear()}`;
+            }
+
+            document.getElementById('nome-igreja-input').addEventListener('input', function() {
+                document.getElementById('sub-igreja-display').textContent = this.value.trim() ? ' - ' + this.value.trim() : '';
+            });
+
+            document.getElementById('busca-hino-gerador').addEventListener('input', atualizarSugestoesGerador);
+
+            document.addEventListener('click', function(e) {
+                const container = document.querySelector('.search-container');
+                const lista = document.getElementById('sugestoes-lista');
+                if (lista && container && !container.contains(e.target)) lista.style.display = 'none';
+            });
+        });
+
+        function atualizarSugestoesGerador() {
+            const input = document.getElementById('busca-hino-gerador');
+            const termo = input.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+            const listaDiv = document.getElementById('sugestoes-lista');
+            listaDiv.innerHTML = '';
+
+            if (!termo) { listaDiv.style.display = 'none'; return; }
+
+            let filtrados = hymnsData.filter(h => {
+                const prefix = h.category === 'cias' ? '(CIAS) ' : '';
+                return `${prefix}${h.number || ''} ${h.title || ''}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(termo);
+            }).slice(0, 15);
+
+            if (filtrados.length === 0) { listaDiv.style.display = 'none'; return; }
+
+            filtrados.forEach(h => {
+                const item = document.createElement('div');
+                item.className = 'sugestao-item';
+                let displayNum = h.category === 'cias' ? (h.number ? `(CIAS) ${h.number}` : '(CIAS)') : (h.number || '');
+                let displayText = displayNum ? `${displayNum} - ${h.title}` : h.title;
+                
+                item.textContent = displayText;
+                item.onclick = function() {
+                    input.value = displayText;
+                    input.dataset.num = displayNum;
+                    input.dataset.title = h.title;
+                    input.dataset.page = h.page || ''; // Salva a página exata mapeada
+                    listaDiv.style.display = 'none';
+                };
+                listaDiv.appendChild(item);
+            });
+            listaDiv.style.display = 'block';
+        }
+
+        function adicionarHinoTabela() {
+            const input = document.getElementById('busca-hino-gerador');
+            const valor = input.value.trim();
+            document.getElementById('sugestoes-lista').style.display = 'none';
+            
+            if (!valor) return;
+
+            let numero = input.dataset.num || '';
+            let nome = input.dataset.title || '';
+            let page = input.dataset.page || ''; // Recupera a página gravada no click da sugestão
+
+            if (!numero && !nome) {
+                const indexHifen = valor.indexOf(' - ');
+                if (indexHifen !== -1) {
+                    numero = valor.substring(0, indexHifen).trim();
+                    nome = valor.substring(indexHifen + 3).trim();
+                } else { nome = valor; }
+            }
+
+            const linhas = document.querySelectorAll('#tabela-corpo tr');
+            let adicionou = false;
+
+            for (let linha of linhas) {
+                const celulas = linha.querySelectorAll('td');
+                if (celulas[0].textContent.trim() === '' && celulas[1].textContent.trim() === '') {
+                    celulas[0].textContent = numero;
+                    celulas[1].textContent = nome;
+                    linha.dataset.page = page; // Guarda a página diretamente na linha da tabela
+                    adicionou = true;
+                    break;
+                }
+            }
+
+            if (!adicionou) {
+                alert("A lista está cheia! Limpe-a ou apague um item antes de adicionar outro.");
+            } else {
+                input.value = ''; input.dataset.num = ''; input.dataset.title = ''; input.dataset.page = '';
+            }
+        }
+
+        function limparListaTabela() {
+            document.querySelectorAll('#tabela-corpo td[contenteditable="true"]').forEach(c => c.textContent = '');
+            document.querySelectorAll('#tabela-corpo tr').forEach(l => delete l.dataset.page);
+        }
+
+        async function salvarImagem(e) {
+            const elemento = document.getElementById('lista-louvores');
+            const btn = e.currentTarget;
+            const textoOriginal = btn.textContent;
+            btn.textContent = "Baixando..."; btn.disabled = true;
+
+            try {
+                const canvas = await html2canvas(elemento, { scale: 2, backgroundColor: "#ffffff" });
+                canvas.toBlob((blob) => {
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob); link.download = 'lista_louvores.png';
+                    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                }, 'image/png');
+            } catch (error) { alert("Houve um erro ao salvar a imagem."); } 
+            finally { btn.textContent = textoOriginal; btn.disabled = false; }
+        }
+
+        async function exportarECompartilhar(e) {
+            const elemento = document.getElementById('lista-louvores');
+            const btn = e.currentTarget;
+            const textoOriginal = btn.textContent;
+            btn.textContent = "Gerando..."; btn.disabled = true;
+
+            try {
+                const canvas = await html2canvas(elemento, { scale: 2, backgroundColor: "#ffffff" });
+                canvas.toBlob(async (blob) => {
+                    const file = new File([blob], "lista_louvores.png", { type: "image/png" });
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try { await navigator.share({ files: [file], title: 'Lista', text: 'Segue a lista de louvores!' }); } 
+                        catch (error) { console.log("Compartilhamento cancelado."); }
+                    } else {
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob); link.download = 'lista_louvores.png';
+                        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                        alert("A imagem foi baixada para o seu dispositivo!");
+                    }
+                }, 'image/png');
+            } catch (error) { alert("Houve um erro ao gerar a imagem."); } 
+            finally { btn.textContent = textoOriginal; btn.disabled = false; }
         }
     </script>
 </body>
