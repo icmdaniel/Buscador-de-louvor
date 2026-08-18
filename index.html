@@ -201,29 +201,43 @@
 
         <!-- ABA 2 NOVA: APRESENTAÇÃO DA LISTA (Sem buscador, exibe na ordem da tabela) -->
         <section id="tab-apresentacao" class="w-full h-full flex flex-col absolute inset-0 hidden bg-gray-200">
-            <div class="bg-gray-800 text-white p-2 flex flex-wrap justify-center items-center gap-2 md:gap-4 shadow-md z-10 shrink-0 text-sm">
-                <button id="pres-prev" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded flex items-center">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg> Anterior
-                </button>
-                
+            <div class="bg-gray-800 text-white p-2 flex flex-col items-center gap-2 shadow-md z-10 shrink-0 text-sm">
+                <!-- Parte Superior: Número e Título do Louvor -->
                 <div class="flex flex-col items-center mx-2 text-center">
-                    <span class="font-bold truncate max-w-[200px] md:max-w-[400px] text-blue-300" id="pres-hino-nome">Nenhum louvor mapeado</span>
+                    <span class="font-bold truncate max-w-[280px] sm:max-w-[500px] md:max-w-[700px] text-blue-300" id="pres-hino-nome">Nenhum louvor mapeado</span>
                     <span id="pres-contador" class="text-gray-400 text-xs">0 / 0</span>
                 </div>
                 
-                <button id="pres-next" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded flex items-center">
-                    Próximo <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                </button>
-                
-                <div class="hidden md:block border-l border-gray-600 h-6 mx-2"></div>
-                
-                <button id="pres-zoom-out" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">- Zoom</button>
-                <span id="pres-zoom-val">70%</span>
-                <button id="pres-zoom-in" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">+ Zoom</button>
+                <!-- Parte Inferior: Botões Anterior, Próximo e Zoom -->
+                <div class="flex flex-wrap justify-center items-center gap-2 md:gap-4 text-sm w-full">
+                    <button id="pres-prev" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg> Anterior
+                    </button>
+                    
+                    <button id="pres-next" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded flex items-center">
+                        Próximo <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                    
+                    <div class="hidden md:block border-l border-gray-600 h-6 mx-2"></div>
+                    
+                    <button id="pres-zoom-out" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">- Zoom</button>
+                    <span id="pres-zoom-val">70%</span>
+                    <button id="pres-zoom-in" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">+ Zoom</button>
+                </div>
             </div>
             
-            <div id="pdf-container-pres" class="flex-grow w-full h-full">
-                <canvas id="pdf-canvas-pres"></canvas>
+            <div class="relative flex-grow w-full h-full overflow-hidden">
+                <div id="pdf-container-pres" class="w-full h-full overflow-auto">
+                    <canvas id="pdf-canvas-pres"></canvas>
+                </div>
+
+                <!-- Setas de navegação laterais sobre a página com baixa opacidade -->
+                <button id="pres-prev-arrow" class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 p-3 bg-black/20 hover:bg-black/50 text-white/60 hover:text-white rounded-full opacity-35 hover:opacity-90 transition z-20 shadow-md focus:outline-none" title="Anterior">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <button id="pres-next-arrow" class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-3 bg-black/20 hover:bg-black/50 text-white/60 hover:text-white rounded-full opacity-35 hover:opacity-90 transition z-20 shadow-md focus:outline-none" title="Próximo">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                </button>
             </div>
         </section>
 
@@ -740,18 +754,25 @@
            ============================================================== */
 
         // Controles da apresentação
-        document.getElementById('pres-prev').addEventListener('click', () => {
+        function presPrevPage() {
             if (currentPresentationIndex > 0) {
                 currentPresentationIndex--;
                 renderPresentationPage();
             }
-        });
-        document.getElementById('pres-next').addEventListener('click', () => {
+        }
+
+        function presNextPage() {
             if (currentPresentationIndex < presentationPages.length - 1) {
                 currentPresentationIndex++;
                 renderPresentationPage();
             }
-        });
+        }
+
+        document.getElementById('pres-prev').addEventListener('click', presPrevPage);
+        document.getElementById('pres-next').addEventListener('click', presNextPage);
+        document.getElementById('pres-prev-arrow').addEventListener('click', presPrevPage);
+        document.getElementById('pres-next-arrow').addEventListener('click', presNextPage);
+
         document.getElementById('pres-zoom-in').addEventListener('click', () => { presScale += 0.2; updatePresZoom(); renderPresentationPage(); });
         document.getElementById('pres-zoom-out').addEventListener('click', () => { if(presScale > 0.6) { presScale -= 0.2; updatePresZoom(); renderPresentationPage(); } });
 
