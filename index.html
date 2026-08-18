@@ -131,13 +131,6 @@
 </head>
 <body class="bg-gray-100 h-screen flex flex-col font-sans overflow-hidden">
 
-    <header class="bg-blue-900 text-white p-4 shadow-md flex justify-between items-center z-10 shrink-0">
-        <div>
-            <h1 class="text-2xl font-bold">Coletânea Cifrada - ICM</h1>
-            <p class="text-sm text-blue-200">Sistema Automático de Consulta e Visualização</p>
-        </div>
-    </header>
-
     <div class="bg-white border-b border-gray-200 shrink-0 overflow-x-auto">
         <nav class="flex gap-4 px-6 pt-2 w-max min-w-full">
             <button onclick="switchTab('tab-gerador')" id="btn-tab-gerador" class="pb-2 px-2 border-b-4 font-semibold transition border-blue-600 text-blue-700 whitespace-nowrap">Gerador de Lista</button>
@@ -225,7 +218,7 @@
                 <div class="hidden md:block border-l border-gray-600 h-6 mx-2"></div>
                 
                 <button id="pres-zoom-out" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">- Zoom</button>
-                <span id="pres-zoom-val">100%</span>
+                <span id="pres-zoom-val">70%</span>
                 <button id="pres-zoom-in" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">+ Zoom</button>
             </div>
             
@@ -257,7 +250,7 @@
                     <div class="hidden md:block border-l border-gray-600 h-6 mx-2"></div>
                     
                     <button id="zoom-out" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">- Zoom</button>
-                    <span id="zoom-val">100%</span>
+                    <span id="zoom-val">70%</span>
                     <button id="zoom-in" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">+ Zoom</button>
                 </div>
                 
@@ -379,12 +372,12 @@
         let pageNum = 1;
         let pageRendering = false;
         let pageNumPending = null;
-        let scale = 1.5;
+        let scale = 0.7;
         let canvas = document.getElementById('pdf-canvas');
         let ctx = canvas.getContext('2d');
 
         // Variáveis da Aba de Apresentação
-        let presScale = 1.5;
+        let presScale = 0.7;
         let canvasPres = document.getElementById('pdf-canvas-pres');
         let ctxPres = canvasPres.getContext('2d');
         let presPageRendering = false;
@@ -542,10 +535,17 @@
             pageRendering = true;
             pdfDoc.getPage(num).then(page => {
                 const viewport = page.getViewport({ scale: scale });
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
+                
+                // Aumenta a qualidade visual mantendo o tamanho no CSS
+                const outputScale = 3; 
+                canvas.width = Math.floor(viewport.width * outputScale);
+                canvas.height = Math.floor(viewport.height * outputScale);
+                canvas.style.width = Math.floor(viewport.width) + "px";
+                canvas.style.height = Math.floor(viewport.height) + "px";
 
-                const renderContext = { canvasContext: ctx, viewport: viewport };
+                const transform = [outputScale, 0, 0, outputScale, 0, 0];
+                const renderContext = { canvasContext: ctx, viewport: viewport, transform: transform };
+                
                 page.render(renderContext).promise.then(() => {
                     pageRendering = false;
                     if (pageNumPending !== null) {
@@ -813,10 +813,17 @@
             presPageRendering = true;
             pdfDoc.getPage(num).then(page => {
                 const viewport = page.getViewport({ scale: presScale });
-                canvasPres.height = viewport.height;
-                canvasPres.width = viewport.width;
+                
+                // Aumenta a qualidade visual mantendo o tamanho no CSS
+                const outputScale = 3;
+                canvasPres.width = Math.floor(viewport.width * outputScale);
+                canvasPres.height = Math.floor(viewport.height * outputScale);
+                canvasPres.style.width = Math.floor(viewport.width) + "px";
+                canvasPres.style.height = Math.floor(viewport.height) + "px";
 
-                const renderContext = { canvasContext: ctxPres, viewport: viewport };
+                const transform = [outputScale, 0, 0, outputScale, 0, 0];
+                const renderContext = { canvasContext: ctxPres, viewport: viewport, transform: transform };
+                
                 page.render(renderContext).promise.then(() => {
                     presPageRendering = false;
                     if (presPageNumPending !== null) {
